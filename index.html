@@ -44,6 +44,7 @@
     button {
       padding: 6px 12px;
       cursor: pointer;
+      user-select: none;
     }
 
     button:hover { background: var(--btn-hover); }
@@ -82,6 +83,12 @@
       margin-top: 10px;
       white-space: pre-wrap;
     }
+
+    .ok {
+      color: #7ee787;
+      margin-top: 10px;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 
@@ -92,17 +99,20 @@
     <textarea id="hand" spellcheck="false">111m234s678p1177z</textarea>
     <div class="row">
       <button id="render">Render</button>
+      <button id="copy">Copy image</button>
+      <button id="export">Export PNG</button>
     </div>
   </div>
 
   <div class="legend">
     <b>Compact:</b> <code id="compactOut">111m234s678p1177z</code><br>
     (m = characters, p = circles, s = bamboo)<br>
-    (0 = red five, z = honors, b = back, | = gap)<br>
-    (1z = East, 2z = South, 3z = West, 4z = North, 5z = White, 6z = Green, 7z = Red)
+    (0 = red five, z = honors, b = back)<br>
+    (1 = East, 2 = South, 3 = West, 4 = North, 5 = White, 6 = Green, 7 = Red)
   </div>
 
   <div id="err" class="err"></div>
+  <div id="ok" class="ok"></div>
   <canvas id="cv"></canvas>
 
 <script>
@@ -112,9 +122,11 @@
   const TILE_DIR = "tiles";
 
   const errEl = document.getElementById("err");
+  const okEl = document.getElementById("ok");
   const compactEl = document.getElementById("compactOut");
 
   function showErr(msg) { errEl.textContent = msg || ""; }
+  function showOk(msg) { okEl.textContent = msg || ""; }
   function setCompact(text) { compactEl.textContent = text || ""; }
   function uniq(arr) { return [...new Set(arr)]; }
 
@@ -186,12 +198,11 @@
     }];
   }
 
-  // Build a canonical compact string that matches what was rendered.
-  // Preserves group separators as " | ".
+  // Canonical compact string for the legend (preserves pipes as " | ").
   function tilesToCompact(groups) {
     function encodeGroup(tiles) {
       let out = "";
-      let currentSuit = null; // 'm','p','s','z' or null
+      let currentSuit = null;
       let digits = "";
 
       function flush() {
@@ -208,14 +219,8 @@
         }
         const digit = t[0];
         const suit = t[1]; // m/p/s/z
-
-        if (currentSuit === suit) {
-          digits += digit;
-        } else {
-          flush();
-          currentSuit = suit;
-          digits = digit;
-        }
+        if (currentSuit === suit) digits += digit;
+        else { flush(); currentSuit = suit; digits = digit; }
       }
       flush();
       return out;
@@ -241,6 +246,7 @@
 
   async function render() {
     showErr("");
+    showOk("");
 
     let groups;
     try {
@@ -251,10 +257,8 @@
     }
     if (!groups.length) return;
 
-    // Update legend to match what will be rendered
     setCompact(tilesToCompact(groups));
 
-    // Flatten for drawing + explicit group separators
     const flat = [];
     for (let gi = 0; gi < groups.length; gi++) {
       for (const k of groups[gi].tiles) flat.push({ k, sep: false });
@@ -269,7 +273,6 @@
       return;
     }
 
-    // Canvas height = tallest tile
     let canvasH = 1;
     for (const k of keys) {
       const img = cache.get(k);
@@ -277,7 +280,6 @@
       if (h > canvasH) canvasH = h;
     }
 
-    // Canvas width = sum native widths + separators
     let totalW = 0;
     for (const item of flat) {
       if (item.sep) totalW += GROUP_GAP;
@@ -295,7 +297,6 @@
     const ctx = cv.getContext("2d");
     ctx.clearRect(0, 0, cv.width, cv.height);
 
-    // Draw native-size tiles, bottom-aligned
     let x = 0;
     for (const item of flat) {
       if (item.sep) { x += GROUP_GAP; continue; }
@@ -306,9 +307,49 @@
     }
   }
 
-  document.getElementById("render").addEventListener("click", render);
+  function exportPNG() {
+    showErr("");
+    showOk("");
 
-  // initial render on load
+    const cv = document.getElementById("cv");
+    const a = document.createElement("a");
+    a.download = "hand.png";
+    a.href = cv.toDataURL("image/png");
+    a.click();
+
+    showOk("Downloaded hand.png");
+  }
+
+  async function copyImage() {
+    showErr("");
+    showOk("");
+
+    // Clipboard API requirements:
+    // - Must be HTTPS (you are, on GitHub Pages)
+    // - Must be triggered by a user gesture (button click)
+    // - Browser support varies (Chrome/Edge best)
+    if (!navigator.clipboard || !window.ClipboardItem) {
+      showErr("Copy image isn't supported in this browser. (Chrome/Edge recommended.)");
+      return;
+    }
+
+    const cv = document.getElementById("cv");
+
+    try {
+      const blob = await new Promise(resolve => cv.toBlob(resolve, "image/png"));
+      if (!blob) throw new Error("Could not create PNG blob.");
+
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      showOk("Copied image to clipboard. Paste into Discord (Ctrl+V).");
+    } catch (e) {
+      showErr("Copy failed. Your browser may be blocking clipboard image writes.\n\n" + (e?.message || e));
+    }
+  }
+
+  document.getElementById("render").addEventListener("click", render);
+  document.getElementById("export").addEventListener("click", exportPNG);
+  document.getElementById("copy").addEventListener("click", copyImage);
+
   render();
 })();
 </script>

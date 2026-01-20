@@ -15,7 +15,11 @@
       --accent: #8ab4f8;
       --ok: #7ee787;
       --err: #ff6b6b;
+      --tooltip-bg: rgba(0, 0, 0, 0.85);
+      --tooltip-border: rgba(255, 255, 255, 0.12);
     }
+
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -24,12 +28,11 @@
       color: var(--text);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       min-height: 100vh;
-      box-sizing: border-box;
       display: flex;
       flex-direction: column;
     }
 
-    h2 { margin-top: 0; margin-bottom: 10px; font-weight: 600; }
+    h2 { margin: 0 0 10px 0; font-weight: 600; }
 
     textarea, button {
       font: inherit;
@@ -96,27 +99,105 @@
       white-space: pre-wrap;
     }
 
-    .spacer {
-      flex: 1 1 auto;
-    }
+    .spacer { flex: 1 1 auto; }
 
     footer {
       margin-top: 18px;
       padding-top: 10px;
       border-top: 1px solid var(--border);
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       color: var(--muted);
       font-size: 12px;
     }
 
-    footer img {
-      height: 18px;
+    .footer-left { white-space: nowrap; }
+
+    .footer-logos {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Tooltip wrapper */
+    .tip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tip img {
+      height: 22px;
       width: auto;
-      opacity: 0.9;
-      display: none; /* shown only if logo loads */
+      opacity: 0.92;
+      display: none; /* becomes visible only if it loads */
+    }
+
+    .tip a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      border-radius: 6px;
+    }
+
+    .tip a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .tip:hover img { opacity: 1; }
+
+    /* Tooltip bubble */
+    .tip::after {
+      content: attr(data-tip);
+      position: absolute;
+      right: 0;
+      bottom: 125%;
+      transform: translateY(4px);
+      background: var(--tooltip-bg);
+      border: 1px solid var(--tooltip-border);
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 11px;
+      line-height: 1.2;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 120ms ease, transform 120ms ease;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.35);
+    }
+
+    .tip:hover::after,
+    .tip:focus-within::after {
+      opacity: 1;
+      transform: translateY(0px);
+    }
+
+    /* Little tooltip arrow */
+    .tip::before {
+      content: "";
+      position: absolute;
+      right: 12px;
+      bottom: calc(125% - 6px);
+      width: 10px;
+      height: 10px;
+      background: var(--tooltip-bg);
+      border-left: 1px solid var(--tooltip-border);
+      border-bottom: 1px solid var(--tooltip-border);
+      transform: rotate(45deg);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 120ms ease;
+    }
+
+    .tip:hover::before,
+    .tip:focus-within::before {
+      opacity: 1;
     }
   </style>
 </head>
@@ -147,8 +228,19 @@
   <div class="spacer"></div>
 
   <footer>
-    <img id="clubLogo" alt="The Yakumen logo" src="yakumen-logo.png" />
-    <span>Made by Brendan Spence (Halorien) of The Yakumen</span>
+    <div class="footer-left">Made by Brendan Spence (Halorien) of The Yakumen</div>
+
+    <div class="footer-logos" aria-label="The Yakumen chapters">
+      <span class="tip" data-tip="Yakumen – Chicago Chapter">
+        <a href="https://linktr.ee/theyakumen" target="_blank" rel="noopener noreferrer" aria-label="Yakumen – Chicago Chapter (opens in new tab)">
+          <img id="logoChi" src="yakumen-chicago.png" alt="Yakumen – Chicago Chapter logo" />
+        </a>
+      </span>
+
+      <span class="tip" data-tip="Yakumen – Springfield Chapter">
+        <img id="logoSpr" src="yakumen-springfield.png" alt="Yakumen – Springfield Chapter logo" />
+      </span>
+    </div>
   </footer>
 
 <script>
@@ -161,16 +253,22 @@
   const okEl = document.getElementById("ok");
   const compactEl = document.getElementById("compactOut");
   const handEl = document.getElementById("hand");
-  const logoEl = document.getElementById("clubLogo");
+
+  const logoChi = document.getElementById("logoChi");
+  const logoSpr = document.getElementById("logoSpr");
 
   function showErr(msg) { errEl.textContent = msg || ""; }
   function showOk(msg) { okEl.textContent = msg || ""; }
   function setCompact(text) { compactEl.textContent = text || ""; }
   function uniq(arr) { return [...new Set(arr)]; }
 
-  // Show logo only if it loads successfully
-  logoEl.addEventListener("load", () => { logoEl.style.display = "inline-block"; });
-  logoEl.addEventListener("error", () => { logoEl.style.display = "none"; });
+  // Show each logo only if it successfully loads
+  function wireLogo(imgEl) {
+    imgEl.addEventListener("load", () => { imgEl.style.display = "inline-block"; });
+    imgEl.addEventListener("error", () => { imgEl.style.display = "none"; });
+  }
+  wireLogo(logoChi);
+  wireLogo(logoSpr);
 
   function normalizeToken(tok) {
     if (!tok) return null;
@@ -276,7 +374,6 @@
     const params = new URLSearchParams(window.location.search);
     const h = params.get("hand");
     if (!h) return null;
-    // Support + meaning space (some apps do this) and decode normally
     return h.replace(/\+/g, " ");
   }
 
@@ -301,8 +398,6 @@
     });
   }
 
-  let lastRenderedCompact = handEl.value.trim();
-
   async function render({ updateURL = true } = {}) {
     showErr("");
     showOk("");
@@ -317,15 +412,15 @@
     if (!groups.length) return;
 
     const compact = tilesToCompact(groups);
-    lastRenderedCompact = compact.replace(/\s\|\s/g, "|"); // for URL: tighter, nicer
     setCompact(compact);
 
     if (updateURL) {
-      // Put the user’s exact input in the URL if you prefer;
-      // but canonical compact makes links consistent.
-      setURLHand(lastRenderedCompact);
+      // For the URL, keep it compact (no spaces around pipes)
+      const urlCompact = compact.replace(/\s\|\s/g, "|");
+      setURLHand(urlCompact);
     }
 
+    // Flatten for drawing + explicit group separators
     const flat = [];
     for (let gi = 0; gi < groups.length; gi++) {
       for (const k of groups[gi].tiles) flat.push({ k, sep: false });
@@ -333,6 +428,7 @@
     }
 
     const keys = uniq(flat.filter(x => x.k).map(x => x.k));
+
     try {
       await Promise.all(keys.map(loadTile));
     } catch (e) {
@@ -417,7 +513,6 @@
   // On load: if URL has ?hand=..., prefill and render it.
   const urlHand = getHandFromURL();
   if (urlHand) {
-    // Allow compact pipes as either "|" or "%7C"; also allow " | " forms.
     handEl.value = urlHand;
     render({ updateURL: false });
   } else {

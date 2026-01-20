@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mahjong Hand Renderer</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --panel: #1e1e1e;
+      --text: #e6e6e6;
+      --muted: #9aa0a6;
+      --border: #333;
+      --btn-hover: #3a3a3a;
+      --accent: #8ab4f8;
+    }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+
+    h2 { margin-top: 0; font-weight: 600; }
+
+    textarea, button {
+      font: inherit;
+      color: var(--text);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    textarea {
+      width: 920px;
+      max-width: 100%;
+      height: 76px;
+      padding: 8px;
+      resize: vertical;
+    }
+
+    button {
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+
+    button:hover { background: var(--btn-hover); }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .legend {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.95em;
+      line-height: 1.4;
+    }
+
+    code {
+      background: #1b1b1b;
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 6px;
+      color: var(--accent);
+    }
+
+    canvas {
+      display: block;
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      background: transparent;
+    }
+
+    .err {
+      color: #ff6b6b;
+      margin-top: 10px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>Mahjong Hand Renderer</h2>
+
+  <div class="row">
+    <textarea id="hand" spellcheck="false">111m234s678p1177z</textarea>
+    <div class="row">
+      <button id="render">Render</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <b>Compact:</b> <code id="compactOut">111m234s678p1177z</code><br>
+    (m = characters, p = circles, s = bamboo)<br>
+    (0 = red five, z = honors, b = back, | = gap)<br>
+    (1z = East, 2z = South, 3z = West, 4z = North, 5z = White, 6z = Green, 7z = Red)
+  </div>
+
+  <div id="err" class="err"></div>
+  <canvas id="cv"></canvas>
+
+<script>
+(() => {
+  const GAP = 0;
+  const GROUP_GAP = 18;
+  const TILE_DIR = "tiles";
+
+  const errEl = document.getElementById("err");
+  const compactEl = document.getElementById("compactOut");
+
+  function showErr(msg) { errEl.textContent = msg || ""; }
+  function setCompact(text) { compactEl.textContent = text || ""; }
+  function uniq(arr) { return [...new Set(arr)]; }
+
+  function normalizeToken(tok) {
+    if (!tok) return null;
+    const t = tok.toLowerCase();
+
+    if (t === "b") return "b";
+    if (/^[0-9][mps]$/.test(t)) return t;   // 0 = red five
+    if (/^[1-7]z$/.test(t)) return t;
+
+    return null;
+  }
+
+  // Parser:
+  // - No automatic suit gaps
+  // - '|' works for both tokenized and compact chunks
+  function parseHand(input) {
+    const raw = input.trim().toLowerCase();
+    if (!raw) return [];
+
+    function compactToTiles(str) {
+      const s = str.trim().toLowerCase();
+      const out = [];
+      let i = 0;
+
+      while (i < s.length) {
+        if (s[i] === "b") {
+          out.push("b");
+          i += 1;
+          continue;
+        }
+
+        let digits = "";
+        while (i < s.length && /[0-9]/.test(s[i])) digits += s[i++];
+
+        if (!digits) throw new Error("Invalid compact format near: " + s.slice(i));
+
+        const suit = s[i++];
+        if (!suit || !/[mpsz]/.test(suit)) throw new Error("Missing/invalid suit after digits: " + digits);
+
+        for (const d of digits) {
+          const k = normalizeToken(d + suit);
+          if (!k) throw new Error("Invalid tile: " + (d + suit));
+          out.push(k);
+        }
+      }
+      return out;
+    }
+
+    if (raw.includes("|")) {
+      const parts = raw.split("|").map(p => p.trim()).filter(Boolean);
+      return parts.map(part => {
+        if (part.includes(" ")) {
+          return { tiles: part.split(/\s+/).map(normalizeToken).filter(Boolean) };
+        }
+        return { tiles: compactToTiles(part) };
+      });
+    }
+
+    if (raw.includes(" ")) {
+      return [{
+        tiles: raw.split(/\s+/).map(normalizeToken).filter(Boolean)
+      }];
+    }
+
+    return [{
+      tiles: compactToTiles(raw)
+    }];
+  }
+
+  // Build a canonical compact string that matches what was rendered.
+  // Preserves group separators as " | ".
+  function tilesToCompact(groups) {
+    function encodeGroup(tiles) {
+      let out = "";
+      let currentSuit = null; // 'm','p','s','z' or null
+      let digits = "";
+
+      function flush() {
+        if (digits && currentSuit) out += digits + currentSuit;
+        digits = "";
+        currentSuit = null;
+      }
+
+      for (const t of tiles) {
+        if (t === "b") {
+          flush();
+          out += "b";
+          continue;
+        }
+        const digit = t[0];
+        const suit = t[1]; // m/p/s/z
+
+        if (currentSuit === suit) {
+          digits += digit;
+        } else {
+          flush();
+          currentSuit = suit;
+          digits = digit;
+        }
+      }
+      flush();
+      return out;
+    }
+
+    return groups.map(g => encodeGroup(g.tiles)).join(" | ");
+  }
+
+  const cache = new Map();
+
+  function loadTile(key) {
+    if (cache.has(key)) return Promise.resolve(cache.get(key));
+
+    const img = new Image();
+    img.decoding = "async";
+    img.src = `${TILE_DIR}/${key}.png`;
+
+    return new Promise((resolve, reject) => {
+      img.onload = () => { cache.set(key, img); resolve(img); };
+      img.onerror = () => reject(new Error(`Failed to load: ${img.src}`));
+    });
+  }
+
+  async function render() {
+    showErr("");
+
+    let groups;
+    try {
+      groups = parseHand(document.getElementById("hand").value);
+    } catch (e) {
+      showErr(e.message);
+      return;
+    }
+    if (!groups.length) return;
+
+    // Update legend to match what will be rendered
+    setCompact(tilesToCompact(groups));
+
+    // Flatten for drawing + explicit group separators
+    const flat = [];
+    for (let gi = 0; gi < groups.length; gi++) {
+      for (const k of groups[gi].tiles) flat.push({ k, sep: false });
+      if (gi < groups.length - 1) flat.push({ k: null, sep: true });
+    }
+
+    const keys = uniq(flat.filter(x => x.k).map(x => x.k));
+    try {
+      await Promise.all(keys.map(loadTile));
+    } catch (e) {
+      showErr(e.message);
+      return;
+    }
+
+    // Canvas height = tallest tile
+    let canvasH = 1;
+    for (const k of keys) {
+      const img = cache.get(k);
+      const h = img.naturalHeight || img.height;
+      if (h > canvasH) canvasH = h;
+    }
+
+    // Canvas width = sum native widths + separators
+    let totalW = 0;
+    for (const item of flat) {
+      if (item.sep) totalW += GROUP_GAP;
+      else {
+        const img = cache.get(item.k);
+        totalW += (img.naturalWidth || img.width) + GAP;
+      }
+    }
+    if (totalW > 0) totalW -= GAP;
+
+    const cv = document.getElementById("cv");
+    cv.width = Math.max(1, totalW);
+    cv.height = canvasH;
+
+    const ctx = cv.getContext("2d");
+    ctx.clearRect(0, 0, cv.width, cv.height);
+
+    // Draw native-size tiles, bottom-aligned
+    let x = 0;
+    for (const item of flat) {
+      if (item.sep) { x += GROUP_GAP; continue; }
+      const img = cache.get(item.k);
+      const h = img.naturalHeight || img.height;
+      ctx.drawImage(img, x, canvasH - h);
+      x += (img.naturalWidth || img.width) + GAP;
+    }
+  }
+
+  document.getElementById("render").addEventListener("click", render);
+
+  // initial render on load
+  render();
+})();
+</script>
+</body>
+</html>

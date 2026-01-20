@@ -13,6 +13,8 @@
       --border: #333;
       --btn-hover: #3a3a3a;
       --accent: #8ab4f8;
+      --ok: #7ee787;
+      --err: #ff6b6b;
     }
 
     body {
@@ -21,9 +23,13 @@
       background: var(--bg);
       color: var(--text);
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      min-height: 100vh;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
     }
 
-    h2 { margin-top: 0; font-weight: 600; }
+    h2 { margin-top: 0; margin-bottom: 10px; font-weight: 600; }
 
     textarea, button {
       font: inherit;
@@ -79,15 +85,38 @@
     }
 
     .err {
-      color: #ff6b6b;
+      color: var(--err);
       margin-top: 10px;
       white-space: pre-wrap;
     }
 
     .ok {
-      color: #7ee787;
+      color: var(--ok);
       margin-top: 10px;
       white-space: pre-wrap;
+    }
+
+    .spacer {
+      flex: 1 1 auto;
+    }
+
+    footer {
+      margin-top: 18px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    footer img {
+      height: 18px;
+      width: auto;
+      opacity: 0.9;
+      display: none; /* shown only if logo loads */
     }
   </style>
 </head>
@@ -115,6 +144,13 @@
   <div id="ok" class="ok"></div>
   <canvas id="cv"></canvas>
 
+  <div class="spacer"></div>
+
+  <footer>
+    <img id="clubLogo" alt="The Yakumen logo" src="yakumen-logo.png" />
+    <span>Made by Brendan Spence (Halorien) of The Yakumen</span>
+  </footer>
+
 <script>
 (() => {
   const GAP = 0;
@@ -124,11 +160,17 @@
   const errEl = document.getElementById("err");
   const okEl = document.getElementById("ok");
   const compactEl = document.getElementById("compactOut");
+  const handEl = document.getElementById("hand");
+  const logoEl = document.getElementById("clubLogo");
 
   function showErr(msg) { errEl.textContent = msg || ""; }
   function showOk(msg) { okEl.textContent = msg || ""; }
   function setCompact(text) { compactEl.textContent = text || ""; }
   function uniq(arr) { return [...new Set(arr)]; }
+
+  // Show logo only if it loads successfully
+  logoEl.addEventListener("load", () => { logoEl.style.display = "inline-block"; });
+  logoEl.addEventListener("error", () => { logoEl.style.display = "none"; });
 
   function normalizeToken(tok) {
     if (!tok) return null;
@@ -229,6 +271,21 @@
     return groups.map(g => encodeGroup(g.tiles)).join(" | ");
   }
 
+  // URL helpers
+  function getHandFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const h = params.get("hand");
+    if (!h) return null;
+    // Support + meaning space (some apps do this) and decode normally
+    return h.replace(/\+/g, " ");
+  }
+
+  function setURLHand(handString) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("hand", handString);
+    history.replaceState(null, "", url);
+  }
+
   const cache = new Map();
 
   function loadTile(key) {
@@ -244,20 +301,30 @@
     });
   }
 
-  async function render() {
+  let lastRenderedCompact = handEl.value.trim();
+
+  async function render({ updateURL = true } = {}) {
     showErr("");
     showOk("");
 
     let groups;
     try {
-      groups = parseHand(document.getElementById("hand").value);
+      groups = parseHand(handEl.value);
     } catch (e) {
       showErr(e.message);
       return;
     }
     if (!groups.length) return;
 
-    setCompact(tilesToCompact(groups));
+    const compact = tilesToCompact(groups);
+    lastRenderedCompact = compact.replace(/\s\|\s/g, "|"); // for URL: tighter, nicer
+    setCompact(compact);
+
+    if (updateURL) {
+      // Put the user’s exact input in the URL if you prefer;
+      // but canonical compact makes links consistent.
+      setURLHand(lastRenderedCompact);
+    }
 
     const flat = [];
     for (let gi = 0; gi < groups.length; gi++) {
@@ -273,6 +340,7 @@
       return;
     }
 
+    // Canvas height = tallest tile
     let canvasH = 1;
     for (const k of keys) {
       const img = cache.get(k);
@@ -280,6 +348,7 @@
       if (h > canvasH) canvasH = h;
     }
 
+    // Canvas width = sum native widths + separators
     let totalW = 0;
     for (const item of flat) {
       if (item.sep) totalW += GROUP_GAP;
@@ -297,6 +366,7 @@
     const ctx = cv.getContext("2d");
     ctx.clearRect(0, 0, cv.width, cv.height);
 
+    // Draw native-size tiles, bottom-aligned
     let x = 0;
     for (const item of flat) {
       if (item.sep) { x += GROUP_GAP; continue; }
@@ -310,13 +380,11 @@
   function exportPNG() {
     showErr("");
     showOk("");
-
     const cv = document.getElementById("cv");
     const a = document.createElement("a");
     a.download = "hand.png";
     a.href = cv.toDataURL("image/png");
     a.click();
-
     showOk("Downloaded hand.png");
   }
 
@@ -324,10 +392,6 @@
     showErr("");
     showOk("");
 
-    // Clipboard API requirements:
-    // - Must be HTTPS (you are, on GitHub Pages)
-    // - Must be triggered by a user gesture (button click)
-    // - Browser support varies (Chrome/Edge best)
     if (!navigator.clipboard || !window.ClipboardItem) {
       showErr("Copy image isn't supported in this browser. (Chrome/Edge recommended.)");
       return;
@@ -342,15 +406,23 @@
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       showOk("Copied image to clipboard. Paste into Discord (Ctrl+V).");
     } catch (e) {
-      showErr("Copy failed. Your browser may be blocking clipboard image writes.\n\n" + (e?.message || e));
+      showErr("Copy failed.\n\n" + (e?.message || e));
     }
   }
 
-  document.getElementById("render").addEventListener("click", render);
+  document.getElementById("render").addEventListener("click", () => render({ updateURL: true }));
   document.getElementById("export").addEventListener("click", exportPNG);
   document.getElementById("copy").addEventListener("click", copyImage);
 
-  render();
+  // On load: if URL has ?hand=..., prefill and render it.
+  const urlHand = getHandFromURL();
+  if (urlHand) {
+    // Allow compact pipes as either "|" or "%7C"; also allow " | " forms.
+    handEl.value = urlHand;
+    render({ updateURL: false });
+  } else {
+    render({ updateURL: false });
+  }
 })();
 </script>
 </body>

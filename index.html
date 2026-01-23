@@ -33,10 +33,7 @@
       flex-direction: column;
     }
 
-    h2 {
-      margin: 0 0 10px 0;
-      font-weight: 600;
-    }
+    h2 { margin: 0 0 10px 0; font-weight: 600; }
 
     textarea, button {
       font: inherit;
@@ -60,9 +57,7 @@
       user-select: none;
     }
 
-    button:hover {
-      background: var(--btn-hover);
-    }
+    button:hover { background: var(--btn-hover); }
 
     .row {
       display: flex;
@@ -119,9 +114,7 @@
       font-size: 12px;
     }
 
-    .footer-left {
-      white-space: nowrap;
-    }
+    .footer-left { white-space: nowrap; }
 
     .footer-logos {
       display: flex;
@@ -141,7 +134,7 @@
       height: 22px;
       width: auto;
       opacity: 0.92;
-      display: none;
+      display: none; /* shown only if it loads (JS handles cached too) */
     }
 
     .tip a {
@@ -150,6 +143,11 @@
       justify-content: center;
       text-decoration: none;
       border-radius: 6px;
+    }
+
+    .tip a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
 
     .tip:hover img { opacity: 1; }
@@ -190,9 +188,32 @@
     }
 
     .tip:hover::after,
-    .tip:hover::before {
+    .tip:focus-within::after {
       opacity: 1;
       transform: translateY(0);
+    }
+
+    .tip:hover::before,
+    .tip:focus-within::before {
+      opacity: 1;
+    }
+
+    /* Small inline checkbox styling */
+    .chk {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.03);
+    }
+
+    .chk input {
+      transform: translateY(1px);
+      accent-color: var(--accent);
     }
   </style>
 </head>
@@ -206,13 +227,18 @@
       <button id="render">Render</button>
       <button id="copy">Copy image</button>
       <button id="export">Export PNG</button>
+
+      <label class="chk" title="Show numbers/letters on tiles">
+        <input id="overlayNums" type="checkbox" />
+        Show numbers
+      </label>
     </div>
   </div>
 
   <div class="legend">
     <b>Compact:</b> <code id="compactOut">111m234s678p1177z</code><br>
     (m = characters, p = circles, s = bamboo)<br>
-    (0 = red five, z = honors, b = back, | = gaps)<br>
+    (0 = red five, z = honors, b = back, | = gap)<br>
     (1 = East, 2 = South, 3 = West, 4 = North, 5 = White, 6 = Green, 7 = Red)
   </div>
 
@@ -223,19 +249,17 @@
   <div class="spacer"></div>
 
   <footer>
-    <div class="footer-left">
-      Made by Brendan Spence (Halorien) of The Yakumen
-    </div>
+    <div class="footer-left">Made by Brendan Spence (Halorien) of The Yakumen</div>
 
-    <div class="footer-logos">
+    <div class="footer-logos" aria-label="The Yakumen chapters">
       <span class="tip" data-tip="Yakumen – Chicago Chapter">
-        <a href="https://linktr.ee/theyakumen" target="_blank" rel="noopener">
-          <img id="logoChi" src="yakumen-chicago.png" alt="Yakumen – Chicago Chapter logo">
+        <a href="https://linktr.ee/theyakumen" target="_blank" rel="noopener noreferrer" aria-label="Yakumen – Chicago Chapter (opens in new tab)">
+          <img id="logoChi" src="yakumen-chicago.png" alt="Yakumen – Chicago Chapter logo" />
         </a>
       </span>
 
       <span class="tip" data-tip="Yakumen – Springfield Chapter">
-        <img id="logoSpr" src="yakumen-springfield.png" alt="Yakumen – Springfield Chapter logo">
+        <img id="logoSpr" src="yakumen-springfield.png" alt="Yakumen – Springfield Chapter logo" />
       </span>
     </div>
   </footer>
@@ -250,146 +274,328 @@
   const okEl = document.getElementById("ok");
   const compactEl = document.getElementById("compactOut");
   const handEl = document.getElementById("hand");
+  const overlayEl = document.getElementById("overlayNums");
+
   const logoChi = document.getElementById("logoChi");
   const logoSpr = document.getElementById("logoSpr");
 
-  function showErr(m) { errEl.textContent = m || ""; }
-  function showOk(m) { okEl.textContent = m || ""; }
-  function setCompact(t) { compactEl.textContent = t || ""; }
-  function uniq(a) { return [...new Set(a)]; }
+  function showErr(msg) { errEl.textContent = msg || ""; }
+  function showOk(msg) { okEl.textContent = msg || ""; }
+  function setCompact(text) { compactEl.textContent = text || ""; }
+  function uniq(arr) { return [...new Set(arr)]; }
 
-  /* IMPORTANT FIX: handle cached images */
-  function wireLogo(img) {
-    function show() { img.style.display = "inline-block"; }
-    function hide() { img.style.display = "none"; }
-
-    img.addEventListener("load", show);
-    img.addEventListener("error", hide);
-
-    if (img.complete && img.naturalWidth > 0) show();
+  // Show logo only if it loads (and handle cached images too)
+  function wireLogo(imgEl) {
+    function show() { imgEl.style.display = "inline-block"; }
+    function hide() { imgEl.style.display = "none"; }
+    imgEl.addEventListener("load", show);
+    imgEl.addEventListener("error", hide);
+    if (imgEl.complete && imgEl.naturalWidth > 0) show();
   }
-
   wireLogo(logoChi);
   wireLogo(logoSpr);
 
-  function normalizeToken(t) {
-    if (!t) return null;
-    t = t.toLowerCase();
+  function normalizeToken(tok) {
+    if (!tok) return null;
+    const t = tok.toLowerCase();
     if (t === "b") return "b";
-    if (/^[0-9][mps]$/.test(t)) return t;
+    if (/^[0-9][mps]$/.test(t)) return t;   // 0 = red five
     if (/^[1-7]z$/.test(t)) return t;
     return null;
   }
 
+  // Parser:
+  // - No automatic suit gaps
+  // - '|' works for both tokenized and compact chunks
   function parseHand(input) {
     const raw = input.trim().toLowerCase();
     if (!raw) return [];
 
     function compactToTiles(str) {
+      const s = str.trim().toLowerCase();
       const out = [];
       let i = 0;
-      while (i < str.length) {
-        if (str[i] === "b") { out.push("b"); i++; continue; }
+
+      while (i < s.length) {
+        if (s[i] === "b") {
+          out.push("b");
+          i += 1;
+          continue;
+        }
+
         let digits = "";
-        while (/[0-9]/.test(str[i])) digits += str[i++];
-        const suit = str[i++];
-        for (const d of digits) out.push(normalizeToken(d + suit));
+        while (i < s.length && /[0-9]/.test(s[i])) digits += s[i++];
+
+        if (!digits) throw new Error("Invalid compact format near: " + s.slice(i));
+
+        const suit = s[i++];
+        if (!suit || !/[mpsz]/.test(suit)) throw new Error("Missing/invalid suit after digits: " + digits);
+
+        for (const d of digits) {
+          const k = normalizeToken(d + suit);
+          if (!k) throw new Error("Invalid tile: " + (d + suit));
+          out.push(k);
+        }
       }
+
       return out;
     }
 
     if (raw.includes("|")) {
-      return raw.split("|").map(p => ({ tiles: compactToTiles(p.trim()) }));
+      const parts = raw.split("|").map(p => p.trim()).filter(Boolean);
+      return parts.map(part => {
+        if (part.includes(" ")) {
+          return { tiles: part.split(/\s+/).map(normalizeToken).filter(Boolean) };
+        }
+        return { tiles: compactToTiles(part) };
+      });
     }
 
-    return [{ tiles: compactToTiles(raw) }];
+    if (raw.includes(" ")) {
+      return [{
+        tiles: raw.split(/\s+/).map(normalizeToken).filter(Boolean)
+      }];
+    }
+
+    return [{
+      tiles: compactToTiles(raw)
+    }];
   }
 
+  // Canonical compact string for the legend (preserves pipes as " | ").
   function tilesToCompact(groups) {
-    return groups.map(g => {
-      let out = "", suit = null, digits = "";
-      function flush() { if (digits) out += digits + suit; digits=""; }
-      for (const t of g.tiles) {
-        if (t === "b") { flush(); out += "b"; continue; }
-        if (suit === t[1]) digits += t[0];
-        else { flush(); suit = t[1]; digits = t[0]; }
+    function encodeGroup(tiles) {
+      let out = "";
+      let currentSuit = null;
+      let digits = "";
+
+      function flush() {
+        if (digits && currentSuit) out += digits + currentSuit;
+        digits = "";
+        currentSuit = null;
+      }
+
+      for (const t of tiles) {
+        if (t === "b") {
+          flush();
+          out += "b";
+          continue;
+        }
+        const digit = t[0];
+        const suit = t[1]; // m/p/s/z
+        if (currentSuit === suit) digits += digit;
+        else { flush(); currentSuit = suit; digits = digit; }
       }
       flush();
       return out;
-    }).join(" | ");
+    }
+
+    return groups.map(g => encodeGroup(g.tiles)).join(" | ");
+  }
+
+  // Overlay label rules:
+  // - b: nothing
+  // - 0m/0p/0s (aka): show "5"
+  // - honors 1z..7z: show E/S/W/N/W/G/R
+  // - suited: show 1..9
+  function overlayLabel(tileKey) {
+    if (!tileKey || tileKey === "b") return null;
+
+    if (tileKey[0] === "0") return "5";
+
+    if (tileKey[1] === "z") {
+      const map = { "1": "E", "2": "S", "3": "W", "4": "N", "5": "W", "6": "G", "7": "R" };
+      return map[tileKey[0]] || null;
+    }
+
+    return tileKey[0];
+  }
+
+function drawOverlayLabel(ctx, tileKey, x, y, w, h) {
+  const label = overlayLabel(tileKey);
+  if (!label) return;
+
+  // closer to MJS: smaller + thinner
+  const fontSize = Math.max(9, Math.round(h * 0.155));
+  const padX = Math.max(2, Math.round(h * 0.035));
+  const padY = Math.max(2, Math.round(h * 0.035));
+
+  ctx.save();
+
+  // Lighter weight, no shadow, no outline
+  ctx.font = `600 ${fontSize}px system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`;
+  ctx.textBaseline = "top";
+  ctx.textAlign = "right";
+
+  // red similar to the screenshots
+  ctx.fillStyle = "#c81919";
+
+  // Nudge down below the bevel (your “hair lower” request baked in)
+  const tx = x + w - padX;
+  const ty = y + padY + Math.round(h * 0.075);
+
+  ctx.fillText(label, tx, ty);
+  ctx.restore();
+}
+
+  // URL helpers
+  function getHandFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const h = params.get("hand");
+    if (!h) return null;
+    return h.replace(/\+/g, " ");
+  }
+
+  function setURLHand(handString) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("hand", handString);
+    history.replaceState(null, "", url);
   }
 
   const cache = new Map();
 
-  function loadTile(k) {
-    if (cache.has(k)) return Promise.resolve(cache.get(k));
+  function loadTile(key) {
+    if (cache.has(key)) return Promise.resolve(cache.get(key));
+
     const img = new Image();
-    img.src = `${TILE_DIR}/${k}.png`;
-    return new Promise((res, rej) => {
-      img.onload = () => { cache.set(k, img); res(img); };
-      img.onerror = () => rej(new Error(`Missing tile: ${k}.png`));
+    img.decoding = "async";
+    img.src = `${TILE_DIR}/${key}.png`;
+
+    return new Promise((resolve, reject) => {
+      img.onload = () => { cache.set(key, img); resolve(img); };
+      img.onerror = () => reject(new Error(`Failed to load: ${img.src}`));
     });
   }
 
-  async function render(updateURL = true) {
-    showErr(""); showOk("");
+  async function render({ updateURL = true } = {}) {
+    showErr("");
+    showOk("");
 
-    const groups = parseHand(handEl.value);
+    let groups;
+    try {
+      groups = parseHand(handEl.value);
+    } catch (e) {
+      showErr(e.message);
+      return;
+    }
+    if (!groups.length) return;
+
     const compact = tilesToCompact(groups);
     setCompact(compact);
 
     if (updateURL) {
-      const url = new URL(location.href);
-      url.searchParams.set("hand", compact.replace(/\s\|\s/g, "|"));
-      history.replaceState(null, "", url);
+      const urlCompact = compact.replace(/\s\|\s/g, "|");
+      setURLHand(urlCompact);
     }
 
     const flat = [];
-    groups.forEach((g, i) => {
-      g.tiles.forEach(t => flat.push({ t, sep:false }));
-      if (i < groups.length - 1) flat.push({ sep:true });
-    });
+    for (let gi = 0; gi < groups.length; gi++) {
+      for (const k of groups[gi].tiles) flat.push({ k, sep: false });
+      if (gi < groups.length - 1) flat.push({ k: null, sep: true });
+    }
 
-    const keys = uniq(flat.filter(x => x.t).map(x => x.t));
-    await Promise.all(keys.map(loadTile));
+    const keys = uniq(flat.filter(x => x.k).map(x => x.k));
+    try {
+      await Promise.all(keys.map(loadTile));
+    } catch (e) {
+      showErr(e.message);
+      return;
+    }
 
-    let h = Math.max(...keys.map(k => cache.get(k).height));
-    let w = flat.reduce((a,x)=>a+(x.sep?GROUP_GAP:cache.get(x.t).width),0);
+    // canvas height = tallest tile
+    let canvasH = 1;
+    for (const k of keys) {
+      const img = cache.get(k);
+      const h = img.naturalHeight || img.height;
+      if (h > canvasH) canvasH = h;
+    }
+
+    // canvas width = sum native widths + separators
+    let totalW = 0;
+    for (const item of flat) {
+      if (item.sep) totalW += GROUP_GAP;
+      else {
+        const img = cache.get(item.k);
+        totalW += (img.naturalWidth || img.width) + GAP;
+      }
+    }
+    if (totalW > 0) totalW -= GAP;
 
     const cv = document.getElementById("cv");
-    cv.width = w; cv.height = h;
+    cv.width = Math.max(1, totalW);
+    cv.height = canvasH;
+
     const ctx = cv.getContext("2d");
+    ctx.clearRect(0, 0, cv.width, cv.height);
 
     let x = 0;
     for (const item of flat) {
       if (item.sep) { x += GROUP_GAP; continue; }
-      const img = cache.get(item.t);
-      ctx.drawImage(img, x, h - img.height);
-      x += img.width;
+
+      const img = cache.get(item.k);
+      const h = img.naturalHeight || img.height;
+      const w = (img.naturalWidth || img.width);
+
+      const drawX = x;
+      const drawY = canvasH - h;
+
+      ctx.drawImage(img, drawX, drawY);
+
+      if (overlayEl && overlayEl.checked) {
+        drawOverlayLabel(ctx, item.k, drawX, drawY, w, h);
+      }
+
+      x += w + GAP;
     }
   }
 
   function exportPNG() {
+    showErr("");
+    showOk("");
+    const cv = document.getElementById("cv");
     const a = document.createElement("a");
     a.download = "hand.png";
-    a.href = document.getElementById("cv").toDataURL("image/png");
+    a.href = cv.toDataURL("image/png");
     a.click();
+    showOk("Downloaded hand.png");
   }
 
   async function copyImage() {
+    showErr("");
+    showOk("");
+
+    if (!navigator.clipboard || !window.ClipboardItem) {
+      showErr("Copy image isn't supported in this browser. (Chrome/Edge recommended.)");
+      return;
+    }
+
     const cv = document.getElementById("cv");
-    const blob = await new Promise(r => cv.toBlob(r));
-    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-    showOk("Copied image to clipboard.");
+
+    try {
+      const blob = await new Promise(resolve => cv.toBlob(resolve, "image/png"));
+      if (!blob) throw new Error("Could not create PNG blob.");
+
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      showOk("Copied image to clipboard. Paste into Discord (Ctrl+V).");
+    } catch (e) {
+      showErr("Copy failed.\n\n" + (e?.message || e));
+    }
   }
 
-  document.getElementById("render").onclick = () => render(true);
-  document.getElementById("export").onclick = exportPNG;
-  document.getElementById("copy").onclick = copyImage;
+  document.getElementById("render").addEventListener("click", () => render({ updateURL: true }));
+  document.getElementById("export").addEventListener("click", exportPNG);
+  document.getElementById("copy").addEventListener("click", copyImage);
 
-  const params = new URLSearchParams(location.search);
-  if (params.get("hand")) handEl.value = params.get("hand");
-  render(false);
+  overlayEl.addEventListener("change", () => render({ updateURL: false }));
+
+  // On load: if URL has ?hand=..., prefill and render it.
+  const urlHand = getHandFromURL();
+  if (urlHand) {
+    handEl.value = urlHand;
+    render({ updateURL: false });
+  } else {
+    render({ updateURL: false });
+  }
 })();
 </script>
 </body>

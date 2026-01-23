@@ -421,7 +421,7 @@ function drawOverlayLabel(ctx, tileKey, x, y, w, h) {
 
   ctx.save();
 
-  ctx.font = `700 ${fontSize}px system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`;
+  ctx.font = `600 ${fontSize}px system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`;
   ctx.textBaseline = "top";
   ctx.textAlign = "right";
 
@@ -429,7 +429,7 @@ function drawOverlayLabel(ctx, tileKey, x, y, w, h) {
   const ty = y + padY + Math.round(h * 0.075);
 
   /* --- subtle white halo for contrast --- */
-  ctx.lineWidth = Math.max(0.75, Math.round(fontSize * 0.06));
+  ctx.lineWidth = Math.max(1, Math.round(fontSize * 0.21));
   ctx.strokeStyle = "rgba(223,223,220,0.9)";
   ctx.strokeText(label, tx, ty);
 

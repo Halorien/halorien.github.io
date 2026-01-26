@@ -34,7 +34,73 @@ button { padding:6px 12px; cursor:pointer; }
   button:hover { background:#2a2a2a; }
   .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
   .legend { color:#9aa0a6; margin-top:8px; font-size:14px; line-height: 1.35; }
-  canvas { margin-top:14px; border:1px solid #333; }
+  canvas { 
+    margin-top:14px; 
+    border:1px solid #333; 
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  #ukeireWrap { margin-top: 14px; overflow-x: auto; }
+  #ukeireWrap .ukeireTitle { font-weight: 700; margin: 0 0 8px 0; }
+  #ukeireWrap .ukeireNote { color:#9aa0a6; font-size: 13px; margin-top: 8px; line-height: 1.35; }
+  #ukeireWrap table { border-collapse: collapse; font-size: 14px; min-width: 520px; }
+  #ukeireWrap th, #ukeireWrap td { border: 1px solid #333; padding: 6px 8px; vertical-align: middle; }
+  #ukeireWrap th { background: #1b1b1b; position: sticky; top: 0; z-index: 1; }
+  #ukeireWrap .tileimg { height: 28px; width: auto; vertical-align: middle; margin-right: 2px; }
+  #ukeireWrap .warn { margin-top: 8px; color: #ffb454; font-size: 14px; }
+
+  #ukeireWrap .tsumoBox { 
+    border: 1px solid rgba(126,231,135,0.35);
+    background: rgba(126,231,135,0.08);
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-top: 10px;
+  }
+  #ukeireWrap .tsumoTitle {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+  #ukeireWrap .tsumoHand {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    column-gap: 14px; /* gap between blocks */
+    row-gap: 10px;
+  }
+  #ukeireWrap .tsumoBlock {
+    display: flex;
+    align-items: flex-end;
+    gap: 0; /* flush tiles within each block */
+  }
+  #ukeireWrap .tsumoHand img {
+    height: 44px;
+    width: auto;
+    display: block;
+  
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  #ukeireWrap .tsumoBlock .tileimg { margin-right: 0 !important; }
+  #ukeireWrap .tsumoHand img.winTile {
+    transform: translateY(-8px);
+  }
+  #ukeireWrap .tsumoHand img {
+    height: 44px;
+    width: auto;
+    display: inline-block;
+  }
+  #ukeireWrap .tsumoHand img.winTile {
+    transform: translateY(-8px);
+  }
+
+  #ukeireWrap .tsumoSub { color:#cfe8d3; font-size: 13px; line-height: 1.35; }
+
   footer {
   padding: 5px 16px;
   border-top: 1px solid #333;
@@ -96,6 +162,13 @@ button { padding:6px 12px; cursor:pointer; }
 
   input[type="checkbox"] { width:auto; padding:0; border:none; background:transparent; }
   #app { flex: 1; overflow: auto; padding: 16px; box-sizing: border-box; }
+
+#ok.tsumoWin {
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: 0.08em;
+}
+
 </style>
 </head>
 
@@ -130,6 +203,23 @@ button { padding:6px 12px; cursor:pointer; }
     <input id="overlayNums" type="checkbox" style="accent-color:#8ab4f8; margin:0;" />
     Tile labels
   </label>
+
+  <label style="
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 12px;
+    height:35px;
+    box-sizing:border-box;
+    font: inherit;
+    user-select:none;
+    border:1px solid #333;
+    border-radius:6px;
+    background:#1e1e1e;
+  " title="Toggle ukeire (tile acceptance) table below the rendered hand.">
+    <input id="showUkeire" type="checkbox" style="accent-color:#8ab4f8; margin:0;" checked />
+    Include ukeire (tile acceptance)
+  </label>
 </div>
 
 <div class="legend">
@@ -146,6 +236,8 @@ button { padding:6px 12px; cursor:pointer; }
 <div id="err" style="margin-top:10px;color:#ff6b6b;white-space:pre-wrap;"></div>
 
 <canvas id="cv"></canvas>
+
+<div id="ukeireWrap" style="display:none;"></div>
 
 
 </main>
@@ -180,6 +272,512 @@ const doraOutEl = document.getElementById("doraOut");
 
 
 const overlayEl = document.getElementById("overlayNums");
+
+const showUkeireEl = document.getElementById("showUkeire");
+const ukeireWrapEl = document.getElementById("ukeireWrap");
+
+/* ---------------- ukeire / shanten ---------------- */
+
+// map tile key ("5m","0p","7z") to 0..33 index; aka-5 (0m/0p/0s) treated as 5.
+function keyToIndex(key) {
+  if (!key || key === "b") return null;
+  const d = key[0] === "0" ? 5 : Number(key[0]);
+  const s = key[1];
+  if (s === "m") return d - 1;
+  if (s === "p") return 9 + (d - 1);
+  if (s === "s") return 18 + (d - 1);
+  if (s === "z") return 27 + (d - 1);
+  return null;
+}
+
+function indexToKey(idx, preferAkaKeySet) {
+  if (idx == null) return null;
+  let suit, n;
+  if (idx < 9) { suit = "m"; n = idx + 1; }
+  else if (idx < 18) { suit = "p"; n = (idx - 9) + 1; }
+  else if (idx < 27) { suit = "s"; n = (idx - 18) + 1; }
+  else { suit = "z"; n = (idx - 27) + 1; }
+
+  const base = `${n}${suit}`;
+  if (preferAkaKeySet && n === 5 && (suit === "m" || suit === "p" || suit === "s")) {
+    const aka = `0${suit}`;
+    if (preferAkaKeySet.has(aka)) return aka;
+  }
+  return base;
+}
+
+function groupsToCounts(groups) {
+  const counts = Array(34).fill(0);
+  const presentKeys = new Set();
+  for (const g of groups) {
+    for (const t of g.tiles) {
+      presentKeys.add(t.key);
+      const idx = keyToIndex(t.key);
+      if (idx != null) counts[idx]++;
+    }
+  }
+  return { counts, presentKeys };
+}
+
+function shantenChiitoi(c) {
+  let pairs = 0, uniq = 0;
+  for (const n of c) { if (n >= 2) pairs++; if (n > 0) uniq++; }
+  return 6 - pairs + Math.max(0, 7 - uniq);
+}
+
+function shantenKokushi(c) {
+  const yaos = [0,8,9,17,18,26,27,28,29,30,31,32,33];
+  let uniq = 0, hasPair = false;
+  for (const i of yaos) {
+    if (c[i] > 0) uniq++;
+    if (c[i] > 1) hasPair = true;
+  }
+  return (13 - uniq) + (hasPair ? 0 : 1) - 1;
+}
+
+// Normal-hand shanten via DFS per-suit + honors, then combine via DP.
+function shantenNormal(counts) {
+  const suitRanges = [[0,8],[9,17],[18,26]];
+
+  function solveSuit(arr9) {
+    const best = new Map();
+    function upd(m, t, head) {
+      const key = `${m},${head}`;
+      const cur = best.get(key);
+      if (cur == null || t > cur) best.set(key, t);
+    }
+    function dfs(pos, a, m, t, head) {
+      while (pos < 9 && a[pos] === 0) pos++;
+      if (pos >= 9) { upd(m, t, head); return; }
+
+      if (a[pos] >= 3) { a[pos]-=3; dfs(pos, a, m+1, t, head); a[pos]+=3; }
+      if (pos <= 6 && a[pos] && a[pos+1] && a[pos+2]) { a[pos]--;a[pos+1]--;a[pos+2]--; dfs(pos, a, m+1, t, head); a[pos]++;a[pos+1]++;a[pos+2]++; }
+      if (head === 0 && a[pos] >= 2) { a[pos]-=2; dfs(pos, a, m, t, 1); a[pos]+=2; }
+      if (pos <= 7 && a[pos] && a[pos+1]) { a[pos]--;a[pos+1]--; dfs(pos, a, m, t+1, head); a[pos]++;a[pos+1]++; }
+      if (pos <= 6 && a[pos] && a[pos+2]) { a[pos]--;a[pos+2]--; dfs(pos, a, m, t+1, head); a[pos]++;a[pos+2]++; }
+
+      a[pos]--; dfs(pos, a, m, t, head); a[pos]++;
+    }
+    dfs(0, arr9.slice(), 0, 0, 0);
+    return best;
+  }
+
+  function solveHonors(h) {
+    const best = new Map();
+    function upd(m, t, head) {
+      const key = `${m},${head}`;
+      const cur = best.get(key);
+      if (cur == null || t > cur) best.set(key, t);
+    }
+    function dfs(i, a, m, t, head) {
+      while (i < 7 && a[i] === 0) i++;
+      if (i >= 7) { upd(m, t, head); return; }
+
+      if (a[i] >= 3) { a[i]-=3; dfs(i, a, m+1, t, head); a[i]+=3; }
+      if (head === 0 && a[i] >= 2) { a[i]-=2; dfs(i, a, m, t, 1); a[i]+=2; }
+      if (a[i] >= 2) { a[i]-=2; dfs(i, a, m, t+1, head); a[i]+=2; }
+
+      a[i]--; dfs(i, a, m, t, head); a[i]++;
+    }
+    dfs(0, h.slice(), 0, 0, 0);
+    return best;
+  }
+
+  function combine(mapA, mapB) {
+    const out = new Map();
+    for (const [kA, tA] of mapA.entries()) {
+      const [mA, hA] = kA.split(",").map(Number);
+      for (const [kB, tB] of mapB.entries()) {
+        const [mB, hB] = kB.split(",").map(Number);
+        const m = mA + mB;
+        const h = Math.min(1, hA + hB);
+        const t = tA + tB;
+        const key = `${m},${h}`;
+        const cur = out.get(key);
+        if (cur == null || t > cur) out.set(key, t);
+      }
+    }
+    return out;
+  }
+
+  const suitMaps = suitRanges.map(([lo,hi]) => solveSuit(counts.slice(lo, hi+1)));
+  const honorsMap = solveHonors(counts.slice(27,34));
+
+  let comb = new Map([["0,0", 0]]);
+  for (const m of suitMaps) comb = combine(comb, m);
+  comb = combine(comb, honorsMap);
+
+  let bestSh = 8;
+  for (const [k, tRaw] of comb.entries()) {
+    let [m, head] = k.split(",").map(Number);
+    if (m > 4) continue;
+    const t = Math.min(tRaw, 4 - m);
+    const sh = 8 - 2*m - t - head;
+    if (sh < bestSh) bestSh = sh;
+  }
+  return bestSh;
+}
+
+function shantenMin(counts) {
+  return Math.min(shantenNormal(counts), shantenChiitoi(counts), shantenKokushi(counts));
+}
+
+
+// True if the hand is already complete (agari). With these shanten formulas, a complete hand is -1.
+function isAgari(counts) {
+  return shantenMin(counts.slice()) <= -1;
+}
+
+// Decompose a winning hand into 5 blocks (pair + 4 sets) for normal hands.
+// Returns { blocks: [ {tiles:[idx...]}... ], type:"normal" } or null.
+function decomposeNormalAgari(counts) {
+  const c = counts.slice();
+
+  // choose a head (pair)
+  for (let head = 0; head < 34; head++) {
+    if (c[head] < 2) continue;
+    c[head] -= 2;
+    const blocks = [ { tiles: [head, head] } ];
+    const out = [];
+    if (meldDfs(c, blocks, out)) return { blocks: out, type: "normal" };
+    c[head] += 2;
+  }
+  return null;
+
+  function meldDfs(cc, blocksIn, outRef) {
+    // find first tile with count>0
+    let i = -1;
+    for (let k = 0; k < 34; k++) { if (cc[k] > 0) { i = k; break; } }
+    if (i === -1) {
+      if (blocksIn.length === 5) { outRef.push(...blocksIn); return true; }
+      return false;
+    }
+
+    // triplet
+    if (cc[i] >= 3) {
+      cc[i] -= 3;
+      blocksIn.push({ tiles: [i,i,i] });
+      if (meldDfs(cc, blocksIn, outRef)) return true;
+      blocksIn.pop();
+      cc[i] += 3;
+    }
+
+    // sequence (only suits)
+    if (i < 27) {
+      const pos = i % 9;
+      if (pos <= 6 && cc[i+1] > 0 && cc[i+2] > 0) {
+        cc[i]--; cc[i+1]--; cc[i+2]--;
+        blocksIn.push({ tiles: [i, i+1, i+2] });
+        if (meldDfs(cc, blocksIn, outRef)) return true;
+        blocksIn.pop();
+        cc[i]++; cc[i+1]++; cc[i+2]++;
+      }
+    }
+
+    return false;
+  }
+}
+
+// Convert a block (tile indices) to a compact string like "123m" or "111z"
+function blockToCompact(block) {
+  const idxs = block.tiles.slice().sort((a,b)=>a-b);
+  const first = idxs[0];
+  let suit;
+  if (first < 9) suit = "m";
+  else if (first < 18) suit = "p";
+  else if (first < 27) suit = "s";
+  else suit = "z";
+
+  const digits = idxs.map(idx => {
+    if (idx < 27) return String((idx % 9) + 1);
+    return String((idx - 27) + 1);
+  }).join("");
+
+  return digits + suit;
+}
+
+// If all blocks are in the same suited suit (m/p/s) and none are honors,
+// collapse "11s | 123s | ... | 999s" into "11|123|...|999s" like your example.
+function collapseSameSuit(blockStrs) {
+  const suits = new Set(blockStrs.map(s => s[s.length-1]));
+  if (suits.size !== 1) return null;
+  const suit = [...suits][0];
+  if (suit === "z") return null;
+  if (blockStrs.some(s => s.endsWith("z"))) return null;
+
+  const stripped = blockStrs.map(s => s.slice(0, -1));
+  stripped[stripped.length - 1] = stripped[stripped.length - 1] + suit;
+  return stripped.join("|");
+}
+
+// Render TSUMO message + 5-block winning configuration. Returns true if displayed.
+function renderTsumoMessage(groups) {
+  const { counts } = groupsToCounts(groups);
+  const tileCount = counts.reduce((a,b)=>a+b,0);
+  if (tileCount !== 14) return false;
+  if (!isAgari(counts)) return false;
+
+  // Determine winning tile as the far-right tile in the input (excluding backs).
+  let winningKey = null;
+  for (let gi = groups.length - 1; gi >= 0 && !winningKey; gi--) {
+    const tiles = groups[gi].tiles;
+    for (let ti = tiles.length - 1; ti >= 0; ti--) {
+      const k = tiles[ti].key;
+      if (k && k !== "b") { winningKey = k; break; }
+    }
+  }
+  const winningIdx = winningKey ? keyToIndex(winningKey) : null;
+
+  // Prefer normal-hand decomposition (your example)
+  const dec = decomposeNormalAgari(counts);
+  const blocks = dec ? dec.blocks : null;
+
+  // Top status line
+  showOk("TSUMO! 🎉"); document.getElementById("ok").classList.add("tsumoWin");
+
+  // Show below canvas (tsumo box)
+  if (ukeireWrapEl) {
+    ukeireWrapEl.style.display = "block";
+    ukeireWrapEl.innerHTML = "";
+
+    const box = document.createElement("div");
+    box.className = "tsumoBox";
+
+    if (blocks) {
+      // Build blocks2 in the SAME order we will render tiles:
+      // - move the block containing the winning tile to the end
+      // - move the winning tile to the far right of that final block
+      const blocks2 = blocks.map(b => ({ tiles: b.tiles.slice() }));
+
+      let winBlockIdx = -1;
+      if (winningIdx != null) {
+        for (let bi = 0; bi < blocks2.length; bi++) {
+          if (blocks2[bi].tiles.includes(winningIdx)) { winBlockIdx = bi; break; }
+        }
+      }
+      if (winBlockIdx !== -1 && winBlockIdx !== blocks2.length - 1) {
+        const [wb] = blocks2.splice(winBlockIdx, 1);
+        blocks2.push(wb);
+      }
+
+      if (winningIdx != null && blocks2.length) {
+        const lastBlock = blocks2[blocks2.length - 1].tiles;
+        const pos = lastBlock.indexOf(winningIdx);
+        if (pos !== -1 && pos !== lastBlock.length - 1) {
+          lastBlock.splice(pos, 1);
+          lastBlock.push(winningIdx);
+        }
+      }
+
+      // "5 Blocks." line ABOVE the rendered hand.
+      // Format uses the same Compact mapping as the main Compact output,
+      // but with "|" rendered as spaces.
+      const blockGroups = blocks2.map((b, bi) => ({
+        call: null,
+        tiles: b.tiles.map((idx, ti) => {
+          // Match the rendered hand exactly:
+          // - keys are derived from indexToKey
+          // - but the final tile uses the exact winningKey if it matches (preserves aka-5)
+          const isLast = (bi === blocks2.length - 1) && (ti === b.tiles.length - 1) &&
+                         (winningKey && keyToIndex(winningKey) === idx);
+          const key = isLast ? winningKey : indexToKey(idx, null);
+          return { key, rot: 0, dora: false };
+        })
+      }));
+
+      const pretty = suppressRepeatedSuits(groupsToCompact(blockGroups).replace(/\|/g, " "));
+
+      const blocksLineEl = document.createElement("div");
+      blocksLineEl.className = "tsumoSub";
+      blocksLineEl.innerHTML = `Winning Shapes: <code>${pretty}</code>`;
+      box.appendChild(blocksLineEl);
+
+      // Render the winning hand as tile images in 5 blocks, flush within blocks.
+      const handRow = document.createElement("div");
+      handRow.className = "tsumoHand";
+
+      for (let bi = 0; bi < blocks2.length; bi++) {
+        const blk = document.createElement("span");
+        blk.className = "tsumoBlock";
+
+        const tiles = blocks2[bi].tiles.slice();
+        for (let ti = 0; ti < tiles.length; ti++) {
+          const idx = tiles[ti];
+          const isLast = (bi === blocks2.length - 1) && (ti === tiles.length - 1) &&
+                         (winningKey && keyToIndex(winningKey) === idx);
+
+          let key = indexToKey(idx, null);
+          if (isLast && winningKey) key = winningKey;
+
+          const img = buildTileImg(key);
+          if (isLast) img.classList.add("winTile");
+          blk.appendChild(img);
+        }
+        handRow.appendChild(blk);
+      }
+
+      box.appendChild(handRow);
+    }
+
+    ukeireWrapEl.appendChild(box);
+  }
+
+  return true;
+}
+
+
+function buildTileImg(key) {
+  const img = document.createElement("img");
+  img.className = "tileimg";
+  img.alt = key;
+  img.src = `${TILE_DIR}/${key}.png`;
+  return img;
+}
+
+function renderUkeireTable(groups) {
+  if (!ukeireWrapEl) return;
+  const enabled = !!(showUkeireEl && showUkeireEl.checked);
+  if (!enabled) {
+    ukeireWrapEl.style.display = "none";
+    ukeireWrapEl.innerHTML = "";
+    return;
+  }
+
+  const { counts, presentKeys } = groupsToCounts(groups);
+  const tileCount = counts.reduce((a,b)=>a+b,0);
+  // If the hand is already complete (agari), don't show ukeire.
+  if (tileCount === 14 && isAgari(counts)) {
+    ukeireWrapEl.style.display = "none";
+    ukeireWrapEl.innerHTML = "";
+    return;
+  }
+
+  if (tileCount !== 13 && tileCount !== 14) {
+    ukeireWrapEl.style.display = "none";
+    ukeireWrapEl.innerHTML = "";
+    return;
+  }
+
+  ukeireWrapEl.style.display = "block";
+  ukeireWrapEl.innerHTML = "";
+
+  const title = document.createElement("div");
+  title.className = "ukeireTitle";
+  title.textContent = "Ukeire (Tile Acceptance)";
+  ukeireWrapEl.appendChild(title);
+
+  const table = document.createElement("table");
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+
+  const thDiscard = document.createElement("th");
+  thDiscard.textContent = "Discard";
+  const thSh = document.createElement("th");
+  thSh.textContent = "Shanten";
+  const thU = document.createElement("th");
+  thU.textContent = "Ukeire (Tile Acceptance)";
+  const thTot = document.createElement("th");
+  thTot.textContent = "Total";
+
+  if (tileCount === 14) headRow.appendChild(thDiscard);
+  headRow.appendChild(thSh);
+  headRow.appendChild(thU);
+  headRow.appendChild(thTot);
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+
+  function rowForBase(counts13, s0, discardIdxOrNull) {
+    const tiles = [];
+    let total = 0;
+
+    for (let t = 0; t < 34; t++) {
+      if (counts13[t] >= 4) continue;
+      counts13[t]++;
+      const s1 = shantenMin(counts13);
+      counts13[t]--;
+      if (s1 < s0) {
+        tiles.push(t);
+        total += (4 - counts13[t]);
+      }
+    }
+
+    const tr = document.createElement("tr");
+
+    if (discardIdxOrNull != null) {
+      const tdD = document.createElement("td");
+      tdD.appendChild(buildTileImg(indexToKey(discardIdxOrNull, presentKeys)));
+      tr.appendChild(tdD);
+    }
+
+    const tdS = document.createElement("td");
+    tdS.textContent = (s0 === 0 ? "Tenpai" : String(s0));
+    tr.appendChild(tdS);
+
+    const tdU = document.createElement("td");
+    for (const idx of tiles) tdU.appendChild(buildTileImg(indexToKey(idx, null)));
+    tr.appendChild(tdU);
+
+    const tdT = document.createElement("td");
+    tdT.textContent = String(total);
+    tr.appendChild(tdT);
+
+    return { tr, total, s0 };
+  }
+
+  const badDiscards = [];
+
+  if (tileCount === 13) {
+    const s0 = shantenMin(counts.slice());
+    const { tr } = rowForBase(counts.slice(), s0, null);
+    tbody.appendChild(tr);
+  } else {
+    let bestAfterDiscard = Infinity;
+    for (let d = 0; d < 34; d++) {
+      if (counts[d] <= 0) continue;
+      counts[d]--;
+      const s = shantenMin(counts);
+      counts[d]++;
+      if (s < bestAfterDiscard) bestAfterDiscard = s;
+    }
+
+    const rows = [];
+    for (let d = 0; d < 34; d++) {
+      if (counts[d] <= 0) continue;
+      counts[d]--;
+      const s0 = shantenMin(counts);
+      const snapshot = counts.slice();
+      counts[d]++;
+
+      if (s0 > bestAfterDiscard) { badDiscards.push(d); continue; }
+
+      const { tr, total } = rowForBase(snapshot, s0, d);
+      rows.push({ tr, total, s0 });
+    }
+
+    rows.sort((a,b) => (b.total - a.total) || (a.s0 - b.s0));
+    for (const r of rows) tbody.appendChild(r.tr);
+  }
+
+  table.appendChild(tbody);
+  ukeireWrapEl.appendChild(table);
+
+  const note = document.createElement("div");
+  note.className = "ukeireNote";
+  note.textContent = "These are the tiles that improve your hand (reduce shanten) on the next draw.";
+  ukeireWrapEl.appendChild(note);
+
+  if (badDiscards.length) {
+    const warn = document.createElement("div");
+    warn.className = "warn";
+    warn.appendChild(document.createTextNode("Do not discard "));
+    for (const d of badDiscards) warn.appendChild(buildTileImg(indexToKey(d, presentKeys)));
+    warn.appendChild(document.createTextNode(" because you'll be destroying a block and moving back a shanten!"));
+    ukeireWrapEl.appendChild(warn);
+  }
+}
+
 const cv = document.getElementById("cv");
 const compactOut = document.getElementById("compactOut");
 const ctx = cv.getContext("2d");
@@ -338,6 +936,45 @@ function parseHand(input) {
   });
 }
 
+
+// Sort a single group's tiles for display (only used for simple "typed" hands).
+// Orders by suit m,p,s,z and by rank ascending. Aka-5 ("0m/0p/0s") is placed just before "5" of that suit.
+// Keeps 'b' (unknown/back) tiles at the end.
+function sortTilesForDisplay(tiles) {
+  const suitOrder = { m: 0, p: 1, s: 2, z: 3 };
+  return tiles.slice().sort((a, b) => {
+    const ka = a.key || "";
+    const kb = b.key || "";
+    if (ka === "b" && kb !== "b") return 1;
+    if (kb === "b" && ka !== "b") return -1;
+    if (ka === "b" && kb === "b") return 0;
+
+    const sa = ka[1], sb = kb[1];
+    const oa = suitOrder[sa] ?? 9;
+    const ob = suitOrder[sb] ?? 9;
+    if (oa !== ob) return oa - ob;
+
+    const da = ka[0] === "0" ? 4.5 : Number(ka[0]);
+    const db = kb[0] === "0" ? 4.5 : Number(kb[0]);
+    if (da !== db) return da - db;
+
+    return 0;
+  });
+}
+
+// Sort the hand BEFORE rendering when the user typed a single compact hand (no separators).
+// We do NOT sort when the user intentionally provided separators (|/spaces) to control layout.
+function sortGroupsForDisplay(groups, originalInput) {
+  const raw = String(originalInput || "").trim();
+  const hasSeparators = /\||\s/.test(raw);
+  if (hasSeparators) return groups;
+
+  return groups.map(g => {
+    if (g.call) return g;
+    return { ...g, tiles: sortTilesForDisplay(g.tiles) };
+  });
+}
+
 function tilesToCompact(tiles) {
   let out = "";
   let digits = "";
@@ -386,6 +1023,71 @@ function groupsToCompact(groups) {
     })
     .join(" | ");
 }
+
+// Post-process a Compact string so repeated suit markers are only shown on the last block of a run.
+// Example: "789m 345p 345s 789s 22s" -> "789m 345p 345 789 22s"
+function suppressRepeatedSuits(compactStr) {
+  const tokens = String(compactStr).trim().split(/\s+/).filter(Boolean);
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    const m = t.match(/^(.+?)([mpsz])$/);
+    if (!m) continue;
+    const suit = m[2];
+    const next = tokens[i+1] || "";
+    const nextM = next.match(/^(.+?)([mpsz])$/);
+    if (nextM && nextM[2] === suit) {
+      tokens[i] = m[1]; // drop suit
+    }
+
+
+// Build a "typed-style" compact string by sorting tiles within each suit and writing each suit once.
+// Example: "789m345p2345789s2s" -> "789m345p22345789s"
+function groupsToSortedCompact(groups) {
+  // count tiles, and also count aka-5 separately so we can output 0's
+  const counts = Array(34).fill(0);
+  const aka = { m: 0, p: 0, s: 0 };
+
+  for (const g of groups) {
+    for (const t of g.tiles) {
+      const k = t.key;
+      if (!k || k === "b") continue;
+      if (k[0] === "0" && (k[1] === "m" || k[1] === "p" || k[1] === "s")) aka[k[1]]++;
+      const idx = keyToIndex(k);
+      if (idx != null) counts[idx]++;
+    }
+  }
+
+  function suitDigits(suit, baseIdx) {
+    let out = "";
+    for (let n = 1; n <= 9; n++) {
+      const idx = baseIdx + (n - 1);
+      let c = counts[idx];
+      if (n === 5 && (suit === "m" || suit === "p" || suit === "s")) {
+        // output aka 0's first, then remaining 5's
+        const a = aka[suit] || 0;
+        out += "0".repeat(a);
+        c = Math.max(0, c - a);
+      }
+      out += String(n).repeat(c);
+    }
+    return out ? (out + suit) : "";
+  }
+
+  function honorDigits() {
+    let out = "";
+    for (let n = 1; n <= 7; n++) {
+      const idx = 27 + (n - 1);
+      out += String(n).repeat(counts[idx]);
+    }
+    return out ? (out + "z") : "";
+  }
+
+  return suitDigits("m", 0) + suitDigits("p", 9) + suitDigits("s", 18) + honorDigits();
+}
+  }
+  return tokens.join(" ");
+}
+
 
 /* ---------------- drawing ---------------- */
 
@@ -471,8 +1173,10 @@ async function render(){
   showOk("");
   showErr("");
   let groups;
+  let groupsRaw;
   try {
-    groups = parseHand(handEl.value);
+    groupsRaw = parseHand(handEl.value);
+    groups = sortGroupsForDisplay(groupsRaw, handEl.value);
   } catch (e) {
     showErr(e?.message || e);
     return;
@@ -494,7 +1198,25 @@ async function render(){
   }
 
   // Compact output (keep it simple and readable)
-  compactOut.textContent = groupsToCompact(groups);
+  
+  // Legend Compact output
+  (function(){
+    try {
+      const { counts } = groupsToCounts(groups);
+      const tileCount = counts.reduce((a,b)=>a+b,0);
+
+      // If 14+ tiles are present (after a draw / complete hand), show suit-sorted compact so the last tile is "placed".
+      if (tileCount >= 14) {
+        compactOut.textContent = groupsToSortedCompact(groups);
+        return;
+      }
+
+      // Otherwise: show the usual Compact (but render | as spaces)
+      compactOut.textContent = groupsToCompact(groups).replace(/\|/g, " ");
+    } catch (e) {
+      compactOut.textContent = groupsToCompact(groups).replace(/\|/g, " ");
+    }
+  })();
 if (ind && doraTile) {
     doraOutEl.innerHTML = `&nbsp;&nbsp;•&nbsp;&nbsp;Dora: <code>${doraTile}</code> (indicator <code>${ind}</code>)`;
   } else if ((doraEl.value || "").trim()) {
@@ -554,6 +1276,12 @@ if (ind && doraTile) {
     });
     if(gi<groups.length-1) x+=GROUP_GAP;
   });
+
+  // Tsumo check + ukeire table (below canvas)
+  const didTsumo = (function(){ try { return renderTsumoMessage(typeof groupsRaw !== "undefined" ? groupsRaw : groups); } catch (e) { return false; } })();
+  if (!didTsumo) {
+    try { renderUkeireTable(typeof groupsRaw !== "undefined" ? groupsRaw : groups); } catch (e) { /* don't break rendering */ }
+  }
 }
 
 /* ---------------- buttons ---------------- */
@@ -587,6 +1315,7 @@ document.getElementById("copy").onclick=async()=>{
 // re-render when indicator changes (nice UX)
 doraEl.addEventListener("input", () => render());
 overlayEl && overlayEl.addEventListener("change", () => render());
+showUkeireEl && showUkeireEl.addEventListener("change", () => render());
 
 // Prefill from URL if present
 const urlHand = getParam("hand");

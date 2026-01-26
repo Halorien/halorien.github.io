@@ -1,727 +1,312 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mahjong Hand Renderer</title>
+<meta charset="utf-8" />
+<title>Mahjong Hand Renderer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <style>
-    :root {
-      --bg: #121212;
-      --panel: #1e1e1e;
-      --text: #e6e6e6;
-      --muted: #9aa0a6;
-      --border: #333;
-      --btn-hover: #3a3a3a;
-      --accent: #8ab4f8;
-      --ok: #7ee787;
-      --err: #ff6b6b;
-      --tooltip-bg: rgba(0, 0, 0, 0.85);
-      --tooltip-border: rgba(255, 255, 255, 0.12);
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      padding: 16px;
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    h2 { margin: 0 0 10px 0; font-weight: 600; }
-
-    textarea, button {
-      font: inherit;
-      color: var(--text);
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-    }
-
-    textarea {
-      width: 920px;
-      max-width: 100%;
-      height: 76px;
-      padding: 8px;
-      resize: vertical;
-    }
-
-    button {
-      padding: 6px 12px;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    button:hover { background: var(--btn-hover); }
-
-    .row {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .legend {
-      margin-top: 8px;
-      color: var(--muted);
-      font-size: 0.95em;
-      line-height: 1.4;
-    }
-
-    code {
-      background: #1b1b1b;
-      border: 1px solid var(--border);
-      padding: 2px 6px;
-      border-radius: 6px;
-      color: var(--accent);
-    }
-
-    canvas {
-      display: block;
-      margin-top: 14px;
-      border: 1px solid var(--border);
-      background: transparent;
-    }
-
-    .err {
-      color: var(--err);
-      margin-top: 10px;
-      white-space: pre-wrap;
-    }
-
-    .ok {
-      color: var(--ok);
-      margin-top: 10px;
-      white-space: pre-wrap;
-    }
-
-    .spacer { flex: 1 1 auto; }
-
-    footer {
-      margin-top: 18px;
-      padding-top: 10px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .footer-left { white-space: nowrap; }
-
-    .footer-logos {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    /* Tooltip wrapper */
-    .tip {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .tip img {
-      height: 22px;
-      width: auto;
-      opacity: 0.92;
-      display: none; /* shown only if it loads (JS handles cached too) */
-    }
-
-    .tip a {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      border-radius: 6px;
-    }
-
-    .tip a:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 2px;
-    }
-
-    .tip:hover img { opacity: 1; }
-
-    .tip::after {
-      content: attr(data-tip);
-      position: absolute;
-      right: 0;
-      bottom: 125%;
-      transform: translateY(4px);
-      background: var(--tooltip-bg);
-      border: 1px solid var(--tooltip-border);
-      color: #fff;
-      padding: 4px 8px;
-      border-radius: 8px;
-      font-size: 11px;
-      white-space: nowrap;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 120ms ease, transform 120ms ease;
-      box-shadow: 0 8px 22px rgba(0,0,0,0.35);
-    }
-
-    .tip::before {
-      content: "";
-      position: absolute;
-      right: 12px;
-      bottom: calc(125% - 6px);
-      width: 10px;
-      height: 10px;
-      background: var(--tooltip-bg);
-      border-left: 1px solid var(--tooltip-border);
-      border-bottom: 1px solid var(--tooltip-border);
-      transform: rotate(45deg);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 120ms ease;
-    }
-
-    .tip:hover::after,
-    .tip:focus-within::after {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .tip:hover::before,
-    .tip:focus-within::before {
-      opacity: 1;
-    }
-
-    /* small checkbox chips */
-    .chk {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--muted);
-      font-size: 13px;
-      padding: 4px 8px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: rgba(255,255,255,0.03);
-      user-select: none;
-    }
-
-    .chk input {
-      transform: translateY(1px);
-      accent-color: var(--accent);
-    }
-  </style>
+<style>
+  body {
+    background:#121212;
+    color:#e6e6e6;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    margin:0;
+    padding:16px;
+  }
+  textarea, button, input {
+    background:#1e1e1e;
+    color:#e6e6e6;
+    border:1px solid #333;
+    border-radius:6px;
+    font:inherit;
+  }
+  textarea { width:900px; max-width:100%; height:70px; padding:8px; }
+  input { padding:6px 10px; width:110px; }
+  button { padding:6px 12px; cursor:pointer; }
+  button:hover { background:#2a2a2a; }
+  .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .legend { color:#9aa0a6; margin-top:8px; font-size:14px; line-height: 1.35; }
+  canvas { margin-top:14px; border:1px solid #333; }
+  footer { margin-top:18px; font-size:12px; color:#9aa0a6; }
+  code { background:#1b1b1b; padding:2px 6px; border-radius:6px; color:#8ab4f8; }
+  .pill { display:inline-block; padding:2px 8px; border:1px solid #333; border-radius:999px; background:#1b1b1b; color:#cfcfcf; }
+</style>
 </head>
 
 <body>
-  <h2>Mahjong Hand Renderer</h2>
 
-  <div class="row">
-    <textarea id="hand" spellcheck="false">111m234s678p1177z</textarea>
-    <div class="row">
-      <button id="render">Render</button>
-      <button id="copy">Copy image</button>
-      <button id="export">Export PNG</button>
+<h2>Mahjong Hand Renderer</h2>
 
-      <label class="chk" title="Show numbers/letters on tiles">
-        <input id="overlayNums" type="checkbox" />
-        Tile labels
-      </label>
-    </div>
-  </div>
+<div class="row">
+  <textarea id="hand">33|345|67p | 111zL</textarea>
 
-  <div class="legend">
-    <b>Compact:</b> <code id="compactOut">111m234s678p1177z</code><br>
-    (m = characters, p = circles, s = bamboo)<br>
-    (0 = red five, z = honors, b = back, | = gap)<br>
-    (1 = East, 2 = South, 3 = West, 4 = North, 5 = White, 6 = Green, 7 = Red)<br>
-    (calls: end a group with L/A/R (Left/Across/Right) to rotate the called tile, e.g. 111zL )
-  </div>
+  <span class="pill">Dora indicator</span>
+  <input id="doraInd" placeholder="e.g. 2p" value="" spellcheck="false" />
 
-  <div id="err" class="err"></div>
-  <div id="ok" class="ok"></div>
-  <canvas id="cv"></canvas>
+  <button id="render">Render</button>
+  <button id="copy">Copy image</button>
+  <button id="export">Export PNG</button>
+</div>
 
-  <div class="spacer"></div>
+<div class="legend">
+  <b>Compact:</b> <code id="compactOut"></code>
+  <span id="doraOut" style="margin-left:10px;"></span><br>
+  (m = characters, p = circles, s = bamboo)<br>
+  (0 = red five, z = honors, b = back, | = gap)<br>
+  (1 = East, 2 = South, 3 = West, 4 = North, 5 = White, 6 = Green, 7 = Red)<br>
+  (Calls: end a group with L/A/R to rotate the called tile, e.g. <code>111zL</code>)<br>
+  (Dora: enter the <i>indicator</i>, the renderer highlights the next tile: 9→1, 4z→1z, 7z→5z)
+</div>
 
-  <footer>
-    <div class="footer-left">Made by Brendan Spence (Halorien) of The Yakumen</div>
+<canvas id="cv"></canvas>
 
-    <div class="footer-logos" aria-label="The Yakumen chapters">
-      <span class="tip" data-tip="Yakumen – Chicago Chapter">
-        <a href="https://linktr.ee/theyakumen" target="_blank" rel="noopener noreferrer" aria-label="Yakumen – Chicago Chapter (opens in new tab)">
-          <img id="logoChi" src="yakumen-chicago.png" alt="Yakumen – Chicago Chapter logo" />
-        </a>
-      </span>
-
-      <span class="tip" data-tip="Yakumen – Springfield Chapter">
-        <img id="logoSpr" src="yakumen-springfield.png" alt="Yakumen – Springfield Chapter logo" />
-      </span>
-    </div>
-  </footer>
+<footer>
+  Made by Brendan Spence (Halorien) of The Yakumen
+</footer>
 
 <script>
 (() => {
-  const GAP = 0;
-  const GROUP_GAP = 18;
-  const TILE_DIR = "tiles";
 
-  const errEl = document.getElementById("err");
-  const okEl = document.getElementById("ok");
-  const compactEl = document.getElementById("compactOut");
-  const handEl = document.getElementById("hand");
-  const overlayEl = document.getElementById("overlayNums");
+const TILE_DIR = "tiles";
+const GROUP_GAP = 18;
+const GAP = 0;
 
-  const logoChi = document.getElementById("logoChi");
-  const logoSpr = document.getElementById("logoSpr");
+const handEl = document.getElementById("hand");
+const doraEl = document.getElementById("doraInd");
+const doraOutEl = document.getElementById("doraOut");
 
-  function showErr(msg) { errEl.textContent = msg || ""; }
-  function showOk(msg) { okEl.textContent = msg || ""; }
-  function setCompact(text) { compactEl.textContent = text || ""; }
-  function uniq(arr) { return [...new Set(arr)]; }
+const cv = document.getElementById("cv");
+const compactOut = document.getElementById("compactOut");
+const ctx = cv.getContext("2d");
+const cache = new Map();
 
-  // Show logo only if it loads (and handle cached images too)
-  function wireLogo(imgEl) {
-    function show() { imgEl.style.display = "inline-block"; }
-    function hide() { imgEl.style.display = "none"; }
-    imgEl.addEventListener("load", show);
-    imgEl.addEventListener("error", hide);
-    if (imgEl.complete && imgEl.naturalWidth > 0) show();
-  }
-  wireLogo(logoChi);
-  wireLogo(logoSpr);
+/* ---------------- parsing ---------------- */
 
-  // tiles only (no per-tile L/A/R suffix anymore)
-  function normalizeTileToken(tok) {
-    if (!tok) return null;
-    const t = tok.toLowerCase();
+function normalizeTile(key) {
+  return { key, rot: 0, dora: false };
+}
 
-    if (t === "b") return { key: "b", rot: 0 };
+function parseDoraIndicator(raw) {
+  const s = (raw || "").trim().toLowerCase();
+  if (!s) return null;
 
-    if (/^[0-9][mps]$/.test(t) || /^[1-7]z$/.test(t)) {
-      return { key: t, rot: 0 };
-    }
-
-    return null;
+  // allow 0m/0p/0s as indicator too (treat as 5 of that suit)
+  // in real rules, indicator can't be aka, but this is helpful for demos.
+  let m = s.match(/^([0-9])([mps])$/);
+  if (m) {
+    const n = m[1] === "0" ? "5" : m[1];
+    if (n < "1" || n > "9") return null;
+    return n + m[2];
   }
 
-  // compact run-length format only: 111m234s678p1177z
-  function compactGroupsToTiles(groupStrings) {
-    // compact format across groups (|):
-    // Allows suit to be specified only once at the end, spanning multiple groups.
-    // Example: 33|345|67p  => 33p | 345p | 67p (with visual gaps kept)
-    const tilesByGroup = groupStrings.map(() => []);
-    let pending = []; // [{ gi, d }...] digits waiting for a suit
+  m = s.match(/^([1-7])z$/);
+  if (m) return s;
 
-    function flushSuit(suit) {
-      if (!pending.length) return;
-      for (const { gi, d } of pending) {
-        const tile = normalizeTileToken(d + suit);
-        if (!tile) throw new Error("Invalid tile: " + (d + suit));
-        tilesByGroup[gi].push(tile);
-      }
-      pending = [];
-    }
+  return null;
+}
 
-    for (let gi = 0; gi < groupStrings.length; gi++) {
-      const s = (groupStrings[gi] || "").trim().toLowerCase();
-      if (!s) continue;
+function nextDora(tileKey) {
+  if (!tileKey || tileKey.length !== 2) return null;
+  const n = tileKey[0];
+  const suit = tileKey[1];
 
-      for (let i = 0; i < s.length; i++) {
-        const ch = s[i];
-
-        if (ch === " ") continue;
-
-        if (ch === "b") {
-          // 'b' is a standalone tile; it cannot appear while digits are waiting for a suit.
-          if (pending.length) {
-            throw new Error("Missing suit before 'b' in compact input.");
-          }
-          tilesByGroup[gi].push({ key: "b", rot: 0 });
-          continue;
-        }
-
-        if (/[0-9]/.test(ch)) {
-          pending.push({ gi, d: ch });
-          continue;
-        }
-
-        if (/[mpsz]/.test(ch)) {
-          flushSuit(ch);
-          continue;
-        }
-
-        throw new Error("Invalid character in compact input: '" + ch + "'");
-      }
-    }
-
-    if (pending.length) {
-      throw new Error("Missing suit letter at the end of compact digits (m/p/s/z).");
-    }
-
-    return tilesByGroup;
+  if (suit === "m" || suit === "p" || suit === "s") {
+    return (n === "9" ? "1" : String(Number(n) + 1)) + suit;
   }
 
-  // Groups:
-  // - separated by |
-  // - optional group-level call suffix at end: L/A/R
-  // Example: 111zL
-  function parseHand(input) {
-    const raw = input.trim();
-    if (!raw) return [];
-
-    const parts = raw.split("|").map(x => x.trim()).filter(Boolean);
-
-    // First pass: pull off groupCall suffix (L/A/R) and keep the remaining content
-    const meta = parts.map(part => {
-      let p = part.trim();
-      let groupCall = null;
-
-      const endCall = p.match(/([lar])\s*$/i);
-      if (endCall) {
-        groupCall = endCall[1].toLowerCase(); // 'l'|'a'|'r'
-        p = p.replace(/([lar])\s*$/i, "").trim();
-      }
-
-      return { p, groupCall };
-    });
-
-    // If ANY group contains spaces, treat groups independently (explicit tokens)
-    const anyTokenized = meta.some(g => g.p.includes(" "));
-    let groups;
-
-    if (anyTokenized) {
-      groups = meta.map(({ p, groupCall }) => {
-        const tiles = p.split(/\s+/).map(normalizeTileToken).filter(Boolean);
-
-        if (groupCall && tiles.length) {
-          const n = tiles.length;
-          let idx = 0;
-          if (groupCall === "l") idx = 0;
-          else if (groupCall === "r") idx = n - 1;
-          else idx = Math.floor((n - 1) / 2);
-
-          tiles[idx].rot = 90;
-        }
-
-        return { tiles, groupCall };
-      });
-    } else {
-      // Compact mode across groups: suit can be specified once, spanning pipes
-      const groupStrings = meta.map(g => g.p);
-      const tilesByGroup = compactGroupsToTiles(groupStrings);
-
-      groups = meta.map(({ groupCall }, i) => {
-        const tiles = tilesByGroup[i] || [];
-
-        if (groupCall && tiles.length) {
-          const n = tiles.length;
-          let idx = 0;
-          if (groupCall === "l") idx = 0;
-          else if (groupCall === "r") idx = n - 1;
-          else idx = Math.floor((n - 1) / 2);
-
-          tiles[idx].rot = 90;
-        }
-
-        return { tiles, groupCall };
-      });
+  if (suit === "z") {
+    // winds 1-4
+    if (n >= "1" && n <= "4") {
+      return (n === "4" ? "1" : String(Number(n) + 1)) + "z";
     }
-
-    return groups;
+    // dragons 5-7
+    if (n >= "5" && n <= "7") {
+      return (n === "7" ? "5" : String(Number(n) + 1)) + "z";
+    }
   }
 
-  // Canonical compact string for the legend (preserves pipes as " | ").
-  // Includes L/A/R at end of group if present.
-  function tilesToCompact(groups) {
-    function encodeGroup(g) {
-      const tiles = g.tiles;
+  return null;
+}
 
-      let out = "";
-      let currentSuit = null;
-      let digits = "";
+function parseHand(input) {
+  const parts = input.toLowerCase().split("|").map(p=>p.trim()).filter(Boolean);
 
-      function flush() {
-        if (digits && currentSuit) out += digits + currentSuit;
-        digits = "";
-        currentSuit = null;
-      }
+  // extract L/A/R suffix
+  const meta = parts.map(p=>{
+    let call=null;
+    const m=p.match(/([lar])$/);
+    if(m){ call=m[1]; p=p.slice(0,-1).trim(); }
+    return { p, call };
+  });
 
-      for (const t of tiles) {
-        if (t.key === "b") {
-          flush();
-          out += "b";
-          continue;
-        }
+  // compact suit-carry parser
+  // digits may be spread across groups; suit applies when encountered.
+  const tilesByGroup = meta.map(()=>[]);
+  let pending=[]; // {gi, d}
 
-        const digit = t.key[0];
-        const suit = t.key[1];
-
-        if (currentSuit === suit) digits += digit;
-        else { flush(); currentSuit = suit; digits = digit; }
-      }
-      flush();
-
-      if (g.groupCall) out += g.groupCall.toUpperCase();
-      return out;
+  function flushSuit(suit){
+    for(const {gi,d} of pending){
+      tilesByGroup[gi].push(normalizeTile(d+suit));
     }
-
-    return groups.map(encodeGroup).join(" | ");
+    pending=[];
   }
 
-  // Overlay label rules:
-  // - b: nothing
-  // - 0m/0p/0s (aka): show "5"
-  // - honors 1z..7z: show E/S/W/N/W/G/R
-  // - suited: show 1..9
-  function overlayLabel(tileKey) {
-    if (!tileKey || tileKey === "b") return null;
-
-    if (tileKey[0] === "0") return "5";
-
-    if (tileKey[1] === "z") {
-      const map = { "1": "E", "2": "S", "3": "W", "4": "N", "5": "W", "6": "G", "7": "R" };
-      return map[tileKey[0]] || null;
-    }
-
-    return tileKey[0];
-  }
-
-  // MJS-ish label style + subtle tile-face outline (#dfdfdc)
-  function drawOverlayLabelLocal(ctx, tileKey, w, h) {
-    const label = overlayLabel(tileKey);
-    if (!label) return;
-
-    const fontSize = Math.max(9, Math.round(h * 0.155));
-    const padX = Math.max(2, Math.round(h * 0.035));
-    const padY = Math.max(2, Math.round(h * 0.065));
-
-    const tx = w - padX;
-    const ty = padY + Math.round(h * 0.055);
-
-    ctx.save();
-    ctx.font = `500 ${fontSize}px system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`;
-    ctx.textBaseline = "top";
-    ctx.textAlign = "right";
-
-    ctx.lineWidth = Math.max(1, Math.round(fontSize * 0.085));
-    ctx.strokeStyle = "rgba(223,223,220,0.9)"; // #dfdfdc
-    ctx.strokeText(label, tx, ty);
-
-    ctx.fillStyle = "#c81919";
-    ctx.fillText(label, tx, ty);
-    ctx.restore();
-  }
-
-  // URL helpers
-  function getHandFromURL() {
-    const params = new URLSearchParams(window.location.search);
-    const h = params.get("hand");
-    if (!h) return null;
-    return h.replace(/\+/g, " ");
-  }
-
-  function setURLHand(handString) {
-    const url = new URL(window.location.href);
-    url.searchParams.set("hand", handString);
-    history.replaceState(null, "", url);
-  }
-
-  const cache = new Map();
-
-  function loadTile(key) {
-    if (cache.has(key)) return Promise.resolve(cache.get(key));
-
-    const img = new Image();
-    img.decoding = "async";
-    img.src = `${TILE_DIR}/${key}.png`;
-
-    return new Promise((resolve, reject) => {
-      img.onload = () => { cache.set(key, img); resolve(img); };
-      img.onerror = () => reject(new Error(`Failed to load: ${img.src}`));
-    });
-  }
-
-  function isMeldGroup(g) {
-    // A group is a "meld" if it ends with L/A/R (groupCall)
-    return !!g.groupCall;
-  }
-
-  async function render({ updateURL = true } = {}) {
-    showErr("");
-    showOk("");
-
-    let groups;
-    try {
-      groups = parseHand(handEl.value);
-    } catch (e) {
-      showErr(e.message);
-      return;
-    }
-    if (!groups.length) return;
-
-    const compact = tilesToCompact(groups);
-    setCompact(compact);
-
-    if (updateURL) {
-      const urlCompact = compact.replace(/\s\|\s/g, "|");
-      setURLHand(urlCompact);
-    }
-
-    // Flatten for drawing + explicit group separators
-    const flat = [];
-    for (let gi = 0; gi < groups.length; gi++) {
-      const g = groups[gi];
-      const meld = isMeldGroup(g);
-      for (const tile of g.tiles) flat.push({ tile, meld, sep: false });
-      if (gi < groups.length - 1) flat.push({ tile: null, meld: false, sep: true });
-    }
-
-    const keys = uniq(flat.filter(x => x.tile && x.tile.key).map(x => x.tile.key));
-    try {
-      await Promise.all(keys.map(loadTile));
-    } catch (e) {
-      showErr(e.message);
-      return;
-    }
-
-    // Determine base tile height (tallest upright tile)
-    let baseH = 1;
-    for (const k of keys) {
-      const img = cache.get(k);
-      const h = img.naturalHeight || img.height;
-      if (h > baseH) baseH = h;
-    }
-
-    // Meld drop offset (subtle)
-    const meldDrop = Math.max(6, Math.round(baseH * 0.10));
-
-    // Canvas height allows melds to sit lower
-    const canvasH = baseH + meldDrop;
-
-    // Canvas width = sum bounding widths + separators
-    let totalW = 0;
-    for (const item of flat) {
-      if (item.sep) { totalW += GROUP_GAP; continue; }
-      const img = cache.get(item.tile.key);
-      const iw = (img.naturalWidth || img.width);
-      const ih = (img.naturalHeight || img.height);
-
-      const bw = item.tile.rot ? ih : iw;
-      totalW += bw + GAP;
-    }
-    if (totalW > 0) totalW -= GAP;
-
-    const cv = document.getElementById("cv");
-    cv.width = Math.max(1, totalW);
-    cv.height = canvasH;
-
-    const ctx = cv.getContext("2d");
-    ctx.clearRect(0, 0, cv.width, cv.height);
-
-    let x = 0;
-    for (const item of flat) {
-      if (item.sep) { x += GROUP_GAP; continue; }
-
-      const img = cache.get(item.tile.key);
-      const iw = (img.naturalWidth || img.width);
-      const ih = (img.naturalHeight || img.height);
-
-      // Determine the "floor" (bottom alignment) for this group
-      const floor = item.meld ? canvasH : baseH;
-      const y = floor - (item.tile.rot ? iw : ih);
-
-      if (item.tile.rot) {
-        const bw = ih;
-        const bh = iw;
-
-        const cx = x + bw / 2;
-        const cy = y + bh / 2;
-
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(Math.PI / 2);
-
-        ctx.drawImage(img, -iw / 2, -ih / 2);
-
-        if (overlayEl && overlayEl.checked) {
-          ctx.save();
-          ctx.translate(-iw / 2, -ih / 2);
-          drawOverlayLabelLocal(ctx, item.tile.key, iw, ih);
-          ctx.restore();
-        }
-
-        ctx.restore();
-        x += bw + GAP;
+  meta.forEach((g,gi)=>{
+    const s=g.p;
+    for(let i=0;i<s.length;i++){
+      const ch=s[i];
+      if(/[0-9]/.test(ch)){
+        pending.push({gi,d:ch});
+      } else if(/[mpsz]/.test(ch)){
+        flushSuit(ch);
+      } else if(ch==="b"){
+        // 'b' stands alone; require no pending digits before it.
+        if (pending.length) throw Error("Missing suit before 'b'");
+        tilesByGroup[gi].push(normalizeTile("b"));
+      } else if(ch===" "){
+        // ignore
       } else {
-        ctx.drawImage(img, x, y);
-
-        if (overlayEl && overlayEl.checked) {
-          ctx.save();
-          ctx.translate(x, y);
-          drawOverlayLabelLocal(ctx, item.tile.key, iw, ih);
-          ctx.restore();
-        }
-
-        x += iw + GAP;
+        // ignore unknown characters to be forgiving (or throw)
+        // throw Error("Invalid character: " + ch);
       }
     }
-  }
+  });
+  if(pending.length) throw Error("Missing suit");
 
-  function exportPNG() {
-    showErr("");
-    showOk("");
-    const cv = document.getElementById("cv");
-    const a = document.createElement("a");
-    a.download = "hand.png";
-    a.href = cv.toDataURL("image/png");
-    a.click();
-    showOk("Downloaded hand.png");
-  }
-
-  async function copyImage() {
-    showErr("");
-    showOk("");
-
-    if (!navigator.clipboard || !window.ClipboardItem) {
-      showErr("Copy image isn't supported in this browser. (Chrome/Edge recommended.)");
-      return;
+  return meta.map((g,i)=>{
+    const tiles=tilesByGroup[i];
+    if(g.call && tiles.length){
+      const n=tiles.length;
+      let idx= g.call==="l"?0 : g.call==="r"?n-1 : Math.floor((n-1)/2);
+      tiles[idx].rot=90;
     }
+    return { tiles, call:g.call };
+  });
+}
 
-    const cv = document.getElementById("cv");
+/* ---------------- drawing ---------------- */
 
-    try {
-      const blob = await new Promise(resolve => cv.toBlob(resolve, "image/png"));
-      if (!blob) throw new Error("Could not create PNG blob.");
+function loadTile(key){
+  if(cache.has(key)) return Promise.resolve(cache.get(key));
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.src=`${TILE_DIR}/${key}.png`;
+    img.onload=()=>{ cache.set(key,img); res(img); };
+    img.onerror=()=>rej(key);
+  });
+}
 
-      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-      showOk("Copied image to clipboard. Paste into Discord (Ctrl+V).");
-    } catch (e) {
-      showErr("Copy failed.\n\n" + (e?.message || e));
+// Gold tint + shine (no glow, no shadows)
+function drawDoraShine(ctx, x, y, w, h) {
+  ctx.save();
+
+  // subtle gold wash on the tile itself (does NOT affect neighbors)
+  ctx.fillStyle = "rgba(255, 215, 120, 0.30)";
+  ctx.fillRect(x, y, w, h);
+
+  // diagonal golden shine
+  const g = ctx.createLinearGradient(x, y, x + w, y + h);
+  g.addColorStop(0.0, "rgba(255,255,255,0.00)");
+  g.addColorStop(0.35, "rgba(255,235,180,0.12)");
+  g.addColorStop(0.5, "rgba(255,245,200,0.22)");
+  g.addColorStop(0.65, "rgba(255,235,180,0.12)");
+  g.addColorStop(1.0, "rgba(255,255,255,0.00)");
+
+  ctx.globalCompositeOperation = "lighter";
+  ctx.fillStyle = g;
+  ctx.fillRect(x, y, w, h);
+
+  ctx.restore();
+}
+
+async function render(){
+  const groups=parseHand(handEl.value);
+
+  // compute auto-dora from indicator
+  const ind = parseDoraIndicator(doraEl.value);
+  const doraTile = ind ? nextDora(ind) : null;
+
+  // mark tiles
+  for (const g of groups) {
+    for (const t of g.tiles) {
+      t.dora = !!(doraTile && t.key === doraTile);
     }
   }
 
-  document.getElementById("render").addEventListener("click", () => render({ updateURL: true }));
-  document.getElementById("export").addEventListener("click", exportPNG);
-  document.getElementById("copy").addEventListener("click", copyImage);
+  // Compact output (keep it simple and readable)
+  compactOut.textContent = groups
+    .map(g => g.tiles.map(t => t.key[0]).join("") + (g.call ? g.call.toUpperCase() : ""))
+    .join(" | ");
 
-  overlayEl.addEventListener("change", () => render({ updateURL: false }));
-
-  // On load: if URL has ?hand=..., prefill and render it.
-  const urlHand = getHandFromURL();
-  if (urlHand) {
-    handEl.value = urlHand;
-    render({ updateURL: false });
+  if (ind && doraTile) {
+    doraOutEl.innerHTML = `&nbsp;&nbsp;•&nbsp;&nbsp;Dora: <code>${doraTile}</code> (indicator <code>${ind}</code>)`;
+  } else if ((doraEl.value || "").trim()) {
+    doraOutEl.innerHTML = `&nbsp;&nbsp;•&nbsp;&nbsp;<span style="color:#ff6b6b;">Invalid indicator</span>`;
   } else {
-    render({ updateURL: false });
+    doraOutEl.textContent = "";
   }
+
+  const keys=[...new Set(groups.flatMap(g=>g.tiles.map(t=>t.key)))];
+  await Promise.all(keys.map(loadTile));
+
+  const baseH=Math.max(...keys.map(k=>cache.get(k).height));
+  let width=0;
+  groups.forEach((g,i)=>{
+    g.tiles.forEach(t=>{
+      const img=cache.get(t.key);
+      width+=(t.rot?img.height:img.width)+GAP;
+    });
+    if(i<groups.length-1) width+=GROUP_GAP;
+  });
+
+  cv.width=width || 1;
+  cv.height=baseH + Math.round(baseH*0.1);
+  ctx.clearRect(0,0,cv.width,cv.height);
+
+  let x=0;
+  groups.forEach((g,gi)=>{
+    const meld=!!g.call;
+    const floor= meld?cv.height:baseH;
+    g.tiles.forEach(t=>{
+      const img=cache.get(t.key);
+      if(t.rot){
+        ctx.save();
+        ctx.translate(x+img.height/2,floor-img.width/2);
+        ctx.rotate(Math.PI/2);
+        ctx.drawImage(img,-img.width/2,-img.height/2);
+        if(t.dora) drawDoraShine(ctx,-img.width/2,-img.height/2,img.width,img.height);
+        ctx.restore();
+        x+=img.height;
+      } else {
+        ctx.drawImage(img,x,floor-img.height);
+        if(t.dora) drawDoraShine(ctx,x,floor-img.height,img.width,img.height);
+        x+=img.width;
+      }
+    });
+    if(gi<groups.length-1) x+=GROUP_GAP;
+  });
+}
+
+/* ---------------- buttons ---------------- */
+
+document.getElementById("render").onclick=render;
+document.getElementById("export").onclick=()=>{
+  const a=document.createElement("a");
+  a.href=cv.toDataURL("image/png");
+  a.download="hand.png";
+  a.click();
+};
+document.getElementById("copy").onclick=async()=>{
+  const blob=await new Promise(r=>cv.toBlob(r));
+  await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);
+};
+
+// re-render when indicator changes (nice UX)
+doraEl.addEventListener("input", () => render());
+
+render();
 })();
 </script>
+
 </body>
 </html>

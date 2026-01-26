@@ -198,7 +198,7 @@
       opacity: 1;
     }
 
-    /* Small inline checkbox styling */
+    /* small checkbox chips */
     .chk {
       display: inline-flex;
       align-items: center;
@@ -209,6 +209,7 @@
       border: 1px solid var(--border);
       border-radius: 6px;
       background: rgba(255,255,255,0.03);
+      user-select: none;
     }
 
     .chk input {
@@ -230,7 +231,7 @@
 
       <label class="chk" title="Show numbers/letters on tiles">
         <input id="overlayNums" type="checkbox" />
-        Show numbers
+        Tile labels
       </label>
     </div>
   </div>
@@ -239,7 +240,8 @@
     <b>Compact:</b> <code id="compactOut">111m234s678p1177z</code><br>
     (m = characters, p = circles, s = bamboo)<br>
     (0 = red five, z = honors, b = back, | = gap)<br>
-    (1 = East, 2 = South, 3 = West, 4 = North, 5 = White, 6 = Green, 7 = Red)
+    (1 = East, 2 = South, 3 = West, 4 = North, 5 = White, 6 = Green, 7 = Red)<br>
+    (calls: end a group with L/A/R (Left/Across/Right) to rotate the called tile, e.g. 111zL )
   </div>
 
   <div id="err" class="err"></div>
@@ -295,76 +297,107 @@
   wireLogo(logoChi);
   wireLogo(logoSpr);
 
-  function normalizeToken(tok) {
+  // tiles only (no per-tile L/A/R suffix anymore)
+  function normalizeTileToken(tok) {
     if (!tok) return null;
     const t = tok.toLowerCase();
-    if (t === "b") return "b";
-    if (/^[0-9][mps]$/.test(t)) return t;   // 0 = red five
-    if (/^[1-7]z$/.test(t)) return t;
+
+    if (t === "b") return { key: "b", rot: 0 };
+
+    if (/^[0-9][mps]$/.test(t) || /^[1-7]z$/.test(t)) {
+      return { key: t, rot: 0 };
+    }
+
     return null;
   }
 
-  // Parser:
-  // - No automatic suit gaps
-  // - '|' works for both tokenized and compact chunks
+  // compact run-length format only: 111m234s678p1177z
+  function compactGroupToTiles(str) {
+    const s = str.trim().toLowerCase();
+    if (!s) return [];
+
+    const out = [];
+    let i = 0;
+
+    while (i < s.length) {
+      if (s[i] === "b") { out.push({ key: "b", rot: 0 }); i++; continue; }
+
+      let digits = "";
+      while (i < s.length && /[0-9]/.test(s[i])) digits += s[i++];
+
+      if (!digits) throw new Error("Invalid compact format near: " + s.slice(i));
+
+      const suit = s[i++];
+      if (!suit || !/[mpsz]/.test(suit)) throw new Error("Missing/invalid suit after digits: " + digits);
+
+      for (const d of digits) {
+        const tile = normalizeTileToken(d + suit);
+        if (!tile) throw new Error("Invalid tile: " + (d + suit));
+        out.push(tile);
+      }
+    }
+
+    return out;
+  }
+
+  // Groups:
+  // - separated by |
+  // - optional group-level call suffix at end: L/A/R
+  // Example: 111zL
   function parseHand(input) {
-    const raw = input.trim().toLowerCase();
+    const raw = input.trim();
     if (!raw) return [];
 
-    function compactToTiles(str) {
-      const s = str.trim().toLowerCase();
-      const out = [];
-      let i = 0;
+    const lower = raw.toLowerCase();
 
-      while (i < s.length) {
-        if (s[i] === "b") {
-          out.push("b");
-          i += 1;
-          continue;
-        }
+    function parseGroup(part) {
+      let p = part.trim();
+      if (!p) return null;
 
-        let digits = "";
-        while (i < s.length && /[0-9]/.test(s[i])) digits += s[i++];
-
-        if (!digits) throw new Error("Invalid compact format near: " + s.slice(i));
-
-        const suit = s[i++];
-        if (!suit || !/[mpsz]/.test(suit)) throw new Error("Missing/invalid suit after digits: " + digits);
-
-        for (const d of digits) {
-          const k = normalizeToken(d + suit);
-          if (!k) throw new Error("Invalid tile: " + (d + suit));
-          out.push(k);
-        }
+      // group-level call suffix at end: L/A/R (case-insensitive)
+      let groupCall = null;
+      const endCall = p.match(/([lar])\s*$/i);
+      if (endCall) {
+        groupCall = endCall[1].toLowerCase(); // 'l'|'a'|'r'
+        p = p.replace(/([lar])\s*$/i, "").trim();
       }
 
-      return out;
-    }
+      // tokenized (space-separated) vs compact
+      let tiles;
+      if (p.includes(" ")) {
+        tiles = p.split(/\s+/).map(normalizeTileToken).filter(Boolean);
+      } else {
+        tiles = compactGroupToTiles(p);
+      }
 
-    if (raw.includes("|")) {
-      const parts = raw.split("|").map(p => p.trim()).filter(Boolean);
-      return parts.map(part => {
-        if (part.includes(" ")) {
-          return { tiles: part.split(/\s+/).map(normalizeToken).filter(Boolean) };
+      // Apply auto-rotate based on groupCall
+      if (groupCall && tiles.length) {
+        const n = tiles.length;
+
+        let idx = 0;
+        if (groupCall === "l") idx = 0;
+        else if (groupCall === "r") idx = n - 1;
+        else {
+          // across: middle tile. For even counts, choose the left-middle.
+          idx = Math.floor((n - 1) / 2);
         }
-        return { tiles: compactToTiles(part) };
-      });
+
+        tiles[idx].rot = 90;
+      }
+
+      return { tiles, groupCall };
     }
 
-    if (raw.includes(" ")) {
-      return [{
-        tiles: raw.split(/\s+/).map(normalizeToken).filter(Boolean)
-      }];
-    }
-
-    return [{
-      tiles: compactToTiles(raw)
-    }];
+    const parts = lower.split("|").map(x => x.trim()).filter(Boolean);
+    return parts.map(parseGroup).filter(Boolean);
   }
 
   // Canonical compact string for the legend (preserves pipes as " | ").
+  // Includes L/A/R at end of group if present.
   function tilesToCompact(groups) {
-    function encodeGroup(tiles) {
+    function encodeGroup(g) {
+      const tiles = g.tiles;
+
       let out = "";
       let currentSuit = null;
       let digits = "";
@@ -376,21 +409,25 @@
       }
 
       for (const t of tiles) {
-        if (t === "b") {
+        if (t.key === "b") {
           flush();
           out += "b";
           continue;
         }
-        const digit = t[0];
-        const suit = t[1]; // m/p/s/z
+
+        const digit = t.key[0];
+        const suit = t.key[1];
+
         if (currentSuit === suit) digits += digit;
         else { flush(); currentSuit = suit; digits = digit; }
       }
       flush();
+
+      if (g.groupCall) out += g.groupCall.toUpperCase();
       return out;
     }
 
-    return groups.map(g => encodeGroup(g.tiles)).join(" | ");
+    return groups.map(encodeGroup).join(" | ");
   }
 
   // Overlay label rules:
@@ -411,35 +448,31 @@
     return tileKey[0];
   }
 
-function drawOverlayLabel(ctx, tileKey, x, y, w, h) {
-  const label = overlayLabel(tileKey);
-  if (!label) return;
+  // MJS-ish label style + subtle tile-face outline (#dfdfdc)
+  function drawOverlayLabelLocal(ctx, tileKey, w, h) {
+    const label = overlayLabel(tileKey);
+    if (!label) return;
 
-  const fontSize = Math.max(9, Math.round(h * 0.155));
-  const padX = Math.max(2, Math.round(h * 0.035));
-  const padY = Math.max(2, Math.round(h * 0.035));
+    const fontSize = Math.max(9, Math.round(h * 0.155));
+    const padX = Math.max(2, Math.round(h * 0.035));
+    const padY = Math.max(2, Math.round(h * 0.065));
 
-  ctx.save();
+    const tx = w - padX;
+    const ty = padY + Math.round(h * 0.055);
 
-  ctx.font = `600 ${fontSize}px system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`;
-  ctx.textBaseline = "top";
-  ctx.textAlign = "right";
+    ctx.save();
+    ctx.font = `500 ${fontSize}px system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`;
+    ctx.textBaseline = "top";
+    ctx.textAlign = "right";
 
-  const tx = x + w - padX;
-  const ty = y + padY + Math.round(h * 0.075);
+    ctx.lineWidth = Math.max(1, Math.round(fontSize * 0.085));
+    ctx.strokeStyle = "rgba(223,223,220,0.9)"; // #dfdfdc
+    ctx.strokeText(label, tx, ty);
 
-  /* --- subtle white halo for contrast --- */
-  ctx.lineWidth = Math.max(1, Math.round(fontSize * 0.21));
-  ctx.strokeStyle = "rgba(223,223,220,0.9)";
-  ctx.strokeText(label, tx, ty);
-
-  /* --- main red text --- */
-  ctx.fillStyle = "#c81919";
-  ctx.fillText(label, tx, ty);
-
-  ctx.restore();
-}
-
+    ctx.fillStyle = "#c81919";
+    ctx.fillText(label, tx, ty);
+    ctx.restore();
+  }
 
   // URL helpers
   function getHandFromURL() {
@@ -470,6 +503,11 @@ function drawOverlayLabel(ctx, tileKey, x, y, w, h) {
     });
   }
 
+  function isMeldGroup(g) {
+    // A group is a "meld" if it ends with L/A/R (groupCall)
+    return !!g.groupCall;
+  }
+
   async function render({ updateURL = true } = {}) {
     showErr("");
     showOk("");
@@ -491,13 +529,16 @@ function drawOverlayLabel(ctx, tileKey, x, y, w, h) {
       setURLHand(urlCompact);
     }
 
+    // Flatten for drawing + explicit group separators
     const flat = [];
     for (let gi = 0; gi < groups.length; gi++) {
-      for (const k of groups[gi].tiles) flat.push({ k, sep: false });
-      if (gi < groups.length - 1) flat.push({ k: null, sep: true });
+      const g = groups[gi];
+      const meld = isMeldGroup(g);
+      for (const tile of g.tiles) flat.push({ tile, meld, sep: false });
+      if (gi < groups.length - 1) flat.push({ tile: null, meld: false, sep: true });
     }
 
-    const keys = uniq(flat.filter(x => x.k).map(x => x.k));
+    const keys = uniq(flat.filter(x => x.tile && x.tile.key).map(x => x.tile.key));
     try {
       await Promise.all(keys.map(loadTile));
     } catch (e) {
@@ -505,22 +546,30 @@ function drawOverlayLabel(ctx, tileKey, x, y, w, h) {
       return;
     }
 
-    // canvas height = tallest tile
-    let canvasH = 1;
+    // Determine base tile height (tallest upright tile)
+    let baseH = 1;
     for (const k of keys) {
       const img = cache.get(k);
       const h = img.naturalHeight || img.height;
-      if (h > canvasH) canvasH = h;
+      if (h > baseH) baseH = h;
     }
 
-    // canvas width = sum native widths + separators
+    // Meld drop offset (subtle)
+    const meldDrop = Math.max(6, Math.round(baseH * 0.10));
+
+    // Canvas height allows melds to sit lower
+    const canvasH = baseH + meldDrop;
+
+    // Canvas width = sum bounding widths + separators
     let totalW = 0;
     for (const item of flat) {
-      if (item.sep) totalW += GROUP_GAP;
-      else {
-        const img = cache.get(item.k);
-        totalW += (img.naturalWidth || img.width) + GAP;
-      }
+      if (item.sep) { totalW += GROUP_GAP; continue; }
+      const img = cache.get(item.tile.key);
+      const iw = (img.naturalWidth || img.width);
+      const ih = (img.naturalHeight || img.height);
+
+      const bw = item.tile.rot ? ih : iw;
+      totalW += bw + GAP;
     }
     if (totalW > 0) totalW -= GAP;
 
@@ -535,20 +584,48 @@ function drawOverlayLabel(ctx, tileKey, x, y, w, h) {
     for (const item of flat) {
       if (item.sep) { x += GROUP_GAP; continue; }
 
-      const img = cache.get(item.k);
-      const h = img.naturalHeight || img.height;
-      const w = (img.naturalWidth || img.width);
+      const img = cache.get(item.tile.key);
+      const iw = (img.naturalWidth || img.width);
+      const ih = (img.naturalHeight || img.height);
 
-      const drawX = x;
-      const drawY = canvasH - h;
+      // Determine the "floor" (bottom alignment) for this group
+      const floor = item.meld ? canvasH : baseH;
+      const y = floor - (item.tile.rot ? iw : ih);
 
-      ctx.drawImage(img, drawX, drawY);
+      if (item.tile.rot) {
+        const bw = ih;
+        const bh = iw;
 
-      if (overlayEl && overlayEl.checked) {
-        drawOverlayLabel(ctx, item.k, drawX, drawY, w, h);
+        const cx = x + bw / 2;
+        const cy = y + bh / 2;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(Math.PI / 2);
+
+        ctx.drawImage(img, -iw / 2, -ih / 2);
+
+        if (overlayEl && overlayEl.checked) {
+          ctx.save();
+          ctx.translate(-iw / 2, -ih / 2);
+          drawOverlayLabelLocal(ctx, item.tile.key, iw, ih);
+          ctx.restore();
+        }
+
+        ctx.restore();
+        x += bw + GAP;
+      } else {
+        ctx.drawImage(img, x, y);
+
+        if (overlayEl && overlayEl.checked) {
+          ctx.save();
+          ctx.translate(x, y);
+          drawOverlayLabelLocal(ctx, item.tile.key, iw, ih);
+          ctx.restore();
+        }
+
+        x += iw + GAP;
       }
-
-      x += w + GAP;
     }
   }
 

@@ -413,9 +413,9 @@ function drawOverlayLabelLocal(ctx, tileKey, w, h) {
   // Position: just below the bevel/shadow edge at top
   const fontSize = Math.max(9, Math.round(h * 0.155));
   const padX = Math.max(2, Math.round(h * 0.035));
-  const padY = Math.max(2, Math.round(h * 0.035));
   const tx = w - padX;
-  const ty = padY + Math.round(h * 0.055);
+  const ty = Math.max(2, h * 0.11) + 2; // <- one knob, actually moves
+;
 
   ctx.save();
   ctx.font = `500 ${fontSize}px system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`;

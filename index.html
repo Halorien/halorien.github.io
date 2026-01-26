@@ -7,13 +7,21 @@
 
 <style>
   body {
-    background:#121212;
-    color:#e6e6e6;
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    margin:0;
-    padding:16px;
-  }
-  textarea, button, input {
+  background:#121212;
+  color:#e6e6e6;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  margin:0;
+  padding:0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+
+
+  textarea, button, input[type="text"] {
     background:#1e1e1e;
     color:#e6e6e6;
     border:1px solid #333;
@@ -21,48 +29,143 @@
     font:inherit;
   }
   textarea { width:900px; max-width:100%; height:70px; padding:8px; }
-  input { padding:6px 10px; width:110px; }
-  button { padding:6px 12px; cursor:pointer; }
+  #doraInd { padding:6px 10px; width:110px; }
+button { padding:6px 12px; cursor:pointer; }
   button:hover { background:#2a2a2a; }
   .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
   .legend { color:#9aa0a6; margin-top:8px; font-size:14px; line-height: 1.35; }
   canvas { margin-top:14px; border:1px solid #333; }
-  footer { margin-top:18px; font-size:12px; color:#9aa0a6; }
+  footer {
+  padding: 5px 16px;
+  border-top: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  color: #9aa0a6;
+  font-size: 12px;
+  box-sizing: border-box;
+}
+
+
+
   code { background:#1b1b1b; padding:2px 6px; border-radius:6px; color:#8ab4f8; }
   .pill { display:inline-block; padding:2px 8px; border:1px solid #333; border-radius:999px; background:#1b1b1b; color:#cfcfcf; }
+
+.footer-logos { display:flex; align-items:flex-end; gap:10px; }
+.tip { position: relative; display: inline-flex; align-items:center; justify-content:center; }
+.tip img { height:22px; width:auto; opacity:0.92; display:none; }
+.tip a { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; border-radius:6px; }
+.tip a:focus-visible { outline:2px solid #8ab4f8; outline-offset:2px; }
+.tip:hover img { opacity:1; }
+.tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  right: 0;
+  bottom: 125%;
+  transform: translateY(4px);
+  background: rgba(0,0,0,0.85);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.35);
+}
+.tip::before {
+  content: "";
+  position: absolute;
+  right: 12px;
+  bottom: calc(125% - 6px);
+  width: 10px;
+  height: 10px;
+  background: rgba(0,0,0,0.85);
+  border-left: 1px solid rgba(255,255,255,0.12);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  transform: rotate(45deg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+.tip:hover::after, .tip:focus-within::after { opacity: 1; transform: translateY(0); }
+.tip:hover::before, .tip:focus-within::before { opacity: 1; }
+
+  input[type="checkbox"] { width:auto; padding:0; border:none; background:transparent; }
+  #app { flex: 1; overflow: auto; padding: 16px; box-sizing: border-box; }
 </style>
 </head>
 
 <body>
+<main id="app">
 
 <h2>Mahjong Hand Renderer</h2>
 
 <div class="row">
-  <textarea id="hand">33|345|67p | 111zL</textarea>
+  <textarea id="hand">33|345|67p|111zL</textarea>
 
   <span class="pill">Dora indicator</span>
-  <input id="doraInd" placeholder="e.g. 2p" value="" spellcheck="false" />
+  <input id="doraInd" placeholder="e.g. 2p" value="" spellcheck="false" / title="Type the dora indicator (e.g., 2p, 9p, 4z, 7z). The next tile becomes dora.">
 
-  <button id="render">Render</button>
-  <button id="copy">Copy image</button>
-  <button id="export">Export PNG</button>
+  <button id="render" title="Render the hand below (also updates the shareable URL).">Render</button>
+  <button id="copy" title="Copy the rendered image to your clipboard for pasting into Discord (Ctrl+V).">Copy image</button>
+  <button id="export" title="Download the rendered hand as a PNG file.">Export PNG</button>
+
+  <label style="
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 12px;
+    height:35px;
+    box-sizing:border-box;
+    font: inherit;
+    user-select:none;
+    border:1px solid #333;
+    border-radius:6px;
+    background:#1e1e1e;
+  " title="Toggle tile labels (numbers/letters) over the tile images.">
+    <input id="overlayNums" type="checkbox" style="accent-color:#8ab4f8; margin:0;" />
+    Tile labels
+  </label>
 </div>
 
 <div class="legend">
   <b>Compact:</b> <code id="compactOut"></code>
   <span id="doraOut" style="margin-left:10px;"></span><br>
   (m = characters, p = circles, s = bamboo)<br>
-  (0 = red five, z = honors, b = back, | = gap)<br>
+  (0 = red five, z = honors, b = back, | or space = gap)<br>
   (1 = East, 2 = South, 3 = West, 4 = North, 5 = White, 6 = Green, 7 = Red)<br>
   (Calls: end a group with L/A/R to rotate the called tile, e.g. <code>111zL</code>)<br>
   (Dora: enter the <i>indicator</i>, the renderer highlights the next tile: 9→1, 4z→1z, 7z→5z)
 </div>
 
+<div id="ok" style="margin-top:10px;color:#7ee787;white-space:pre-wrap;"></div>
+<div id="err" style="margin-top:10px;color:#ff6b6b;white-space:pre-wrap;"></div>
+
 <canvas id="cv"></canvas>
 
+
+</main>
+
 <footer>
-  Made by Brendan Spence (Halorien) of The Yakumen
+  <div>Made by Brendan Spence (Halorien) of The Yakumen</div>
+
+  <div class="footer-logos" aria-label="The Yakumen chapters">
+    <span class="tip" data-tip="Yakumen – Chicago Chapter">
+      <a href="https://linktr.ee/theyakumen" target="_blank" rel="noopener noreferrer" aria-label="Yakumen – Chicago Chapter (opens in new tab)">
+        <img id="logoChi" src="yakumen-chicago.png" alt="Yakumen – Chicago Chapter logo" />
+      </a>
+    </span>
+
+    <span class="tip" data-tip="Yakumen – Springfield Chapter">
+      <img id="logoSpr" src="yakumen-springfield.png" alt="Yakumen – Springfield Chapter logo" />
+    </span>
+  </div>
 </footer>
+
 
 <script>
 (() => {
@@ -75,10 +178,57 @@ const handEl = document.getElementById("hand");
 const doraEl = document.getElementById("doraInd");
 const doraOutEl = document.getElementById("doraOut");
 
+
+const overlayEl = document.getElementById("overlayNums");
 const cv = document.getElementById("cv");
 const compactOut = document.getElementById("compactOut");
 const ctx = cv.getContext("2d");
+
+const okEl = document.getElementById("ok");
+const errEl = document.getElementById("err");
+function showOk(msg){ if(okEl) okEl.textContent = msg || ""; }
+function showErr(msg){ if(errEl) errEl.textContent = msg || ""; }
+
 const cache = new Map();
+
+// Yakumen logos: show only if they load (handles cached images too)
+const logoChi = document.getElementById("logoChi");
+const logoSpr = document.getElementById("logoSpr");
+function wireLogo(imgEl) {
+  if (!imgEl) return;
+  function show() { imgEl.style.display = "inline-block"; }
+  function hide() { imgEl.style.display = "none"; }
+  imgEl.addEventListener("load", show);
+  imgEl.addEventListener("error", hide);
+  if (imgEl.complete && imgEl.naturalWidth > 0) show();
+}
+wireLogo(logoChi);
+wireLogo(logoSpr);
+
+
+/* ---------------- url helpers ---------------- */
+
+function getParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+function setParam(name, value) {
+  const url = new URL(window.location.href);
+  const v = (value || "").trim();
+  if (v) url.searchParams.set(name, v);
+  else url.searchParams.delete(name);
+  history.replaceState(null, "", url);
+}
+
+// For shareable URLs: remove spaces, and use '|' with no surrounding whitespace
+function normalizeHandForURL(s) {
+  return (s || "")
+    .trim()
+    .replace(/\s*\|\s*/g, "|")
+    .replace(/\s+/g, "");
+}
+
+
 
 /* ---------------- parsing ---------------- */
 
@@ -129,7 +279,11 @@ function nextDora(tileKey) {
 }
 
 function parseHand(input) {
-  const parts = input.toLowerCase().split("|").map(p=>p.trim()).filter(Boolean);
+  const normalized = input.toLowerCase()
+    .trim()
+    .replace(/\s*\|\s*/g, "|")
+    .replace(/\s+/g, "|");
+  const parts = normalized.split("|").map(p=>p.trim()).filter(Boolean);
 
   // extract L/A/R suffix
   const meta = parts.map(p=>{
@@ -184,7 +338,101 @@ function parseHand(input) {
   });
 }
 
+function tilesToCompact(tiles) {
+  let out = "";
+  let digits = "";
+  let suit = null;
+
+  const flush = () => {
+    if (digits && suit) out += digits + suit;
+    digits = "";
+    suit = null;
+  };
+
+  for (const t of tiles) {
+    const k = t.key;
+
+    if (k === "b") {
+      flush();
+      out += "b";
+      continue;
+    }
+
+    const d = k[0];
+    const s = k[1];
+
+    if (suit === null) {
+      suit = s;
+      digits = d;
+    } else if (s === suit) {
+      digits += d;
+    } else {
+      flush();
+      suit = s;
+      digits = d;
+    }
+  }
+
+  flush();
+  return out;
+}
+
+function groupsToCompact(groups) {
+  return groups
+    .map(g => {
+      const base = tilesToCompact(g.tiles);
+      const call = g.call ? g.call.toUpperCase() : "";
+      return base + call;
+    })
+    .join(" | ");
+}
+
 /* ---------------- drawing ---------------- */
+
+
+// Tile label overlay rules:
+// - b: nothing
+// - 0m/0p/0s: show "5"
+// - honors 1z..7z: show E/S/W/N/W/G/R
+// - suited: show digit
+function overlayLabel(tileKey) {
+  if (!tileKey || tileKey === "b") return null;
+  if (tileKey[0] === "0") return "5";
+  if (tileKey[1] === "z") {
+    const map = { "1": "E", "2": "S", "3": "W", "4": "N", "5": "W", "6": "G", "7": "R" };
+    return map[tileKey[0]] || null;
+  }
+  return tileKey[0];
+}
+
+// Draw label in the tile's local coordinates (0..w, 0..h)
+function drawOverlayLabelLocal(ctx, tileKey, w, h) {
+  const label = overlayLabel(tileKey);
+  if (!label) return;
+
+  // Position: just below the bevel/shadow edge at top
+  const fontSize = Math.max(9, Math.round(h * 0.155));
+  const padX = Math.max(2, Math.round(h * 0.035));
+  const padY = Math.max(2, Math.round(h * 0.035));
+  const tx = w - padX;
+  const ty = padY + Math.round(h * 0.055);
+
+  ctx.save();
+  ctx.font = `500 ${fontSize}px system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`;
+  ctx.textBaseline = "top";
+  ctx.textAlign = "right";
+
+  // Slight outline matching tile face color for readability (esp. 9s)
+  ctx.lineWidth = Math.max(1, Math.round(fontSize * 0.085));
+  ctx.strokeStyle = "rgba(223,223,220,0.9)"; // #dfdfdc
+  ctx.strokeText(label, tx, ty);
+
+  // Thin, MJS-ish red
+  ctx.fillStyle = "#c81919";
+  ctx.fillText(label, tx, ty);
+
+  ctx.restore();
+}
 
 function loadTile(key){
   if(cache.has(key)) return Promise.resolve(cache.get(key));
@@ -220,7 +468,19 @@ function drawDoraShine(ctx, x, y, w, h) {
 }
 
 async function render(){
-  const groups=parseHand(handEl.value);
+  showOk("");
+  showErr("");
+  let groups;
+  try {
+    groups = parseHand(handEl.value);
+  } catch (e) {
+    showErr(e?.message || e);
+    return;
+  }
+  // Update URL so hands are shareable via ?hand=...&dora=...
+  setParam("hand", normalizeHandForURL(handEl.value));
+  setParam("dora", (doraEl.value || "").trim());
+
 
   // compute auto-dora from indicator
   const ind = parseDoraIndicator(doraEl.value);
@@ -234,11 +494,8 @@ async function render(){
   }
 
   // Compact output (keep it simple and readable)
-  compactOut.textContent = groups
-    .map(g => g.tiles.map(t => t.key[0]).join("") + (g.call ? g.call.toUpperCase() : ""))
-    .join(" | ");
-
-  if (ind && doraTile) {
+  compactOut.textContent = groupsToCompact(groups);
+if (ind && doraTile) {
     doraOutEl.innerHTML = `&nbsp;&nbsp;•&nbsp;&nbsp;Dora: <code>${doraTile}</code> (indicator <code>${ind}</code>)`;
   } else if ((doraEl.value || "").trim()) {
     doraOutEl.innerHTML = `&nbsp;&nbsp;•&nbsp;&nbsp;<span style="color:#ff6b6b;">Invalid indicator</span>`;
@@ -275,11 +532,23 @@ async function render(){
         ctx.rotate(Math.PI/2);
         ctx.drawImage(img,-img.width/2,-img.height/2);
         if(t.dora) drawDoraShine(ctx,-img.width/2,-img.height/2,img.width,img.height);
+        if(overlayEl && overlayEl.checked) {
+          ctx.save();
+          ctx.translate(-img.width/2, -img.height/2);
+          drawOverlayLabelLocal(ctx, t.key, img.width, img.height);
+          ctx.restore();
+        }
         ctx.restore();
         x+=img.height;
       } else {
         ctx.drawImage(img,x,floor-img.height);
         if(t.dora) drawDoraShine(ctx,x,floor-img.height,img.width,img.height);
+        if(overlayEl && overlayEl.checked) {
+          ctx.save();
+          ctx.translate(x, floor - img.height);
+          drawOverlayLabelLocal(ctx, t.key, img.width, img.height);
+          ctx.restore();
+        }
         x+=img.width;
       }
     });
@@ -291,18 +560,43 @@ async function render(){
 
 document.getElementById("render").onclick=render;
 document.getElementById("export").onclick=()=>{
+  showOk("");
+  showErr("");
   const a=document.createElement("a");
   a.href=cv.toDataURL("image/png");
   a.download="hand.png";
   a.click();
+  showOk("Downloaded hand.png");
 };
 document.getElementById("copy").onclick=async()=>{
-  const blob=await new Promise(r=>cv.toBlob(r));
-  await navigator.clipboard.write([new ClipboardItem({"image/png":blob})]);
+  showOk("");
+  showErr("");
+  try {
+    if (!navigator.clipboard || !window.ClipboardItem) {
+      throw new Error("Copy image isn’t supported in this browser. Try Chrome/Edge.");
+    }
+    const blob = await new Promise(r => cv.toBlob(r, "image/png"));
+    if (!blob) throw new Error("Could not create PNG blob.");
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    showOk("Image copied — paste into Discord (Ctrl+V).");
+  } catch (e) {
+    showErr("Copy failed. " + (e?.message || e));
+  }
 };
 
 // re-render when indicator changes (nice UX)
 doraEl.addEventListener("input", () => render());
+overlayEl && overlayEl.addEventListener("change", () => render());
+
+// Prefill from URL if present
+const urlHand = getParam("hand");
+if (urlHand) {
+  handEl.value = urlHand.replace(/\+/g, " ");
+}
+const urlDora = getParam("dora");
+if (urlDora !== null) {
+  doraEl.value = urlDora;
+}
 
 render();
 })();

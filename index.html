@@ -625,7 +625,7 @@ button { padding:6px 12px; cursor:pointer; }
     border-radius:6px;
     background:#1e1e1e;
   " title="Toggle ukeire (tile acceptance) table below the rendered hand.">
-    <input id="showUkeire" type="checkbox" style="accent-color:#8ab4f8; margin:0;" checked />
+    <input id="showUkeire" type="checkbox" style="accent-color:#8ab4f8; margin:0;" />
     Include ukeire (tile acceptance)
   </label>
 </div>
@@ -2546,17 +2546,21 @@ if (ind && doraTile) {
   await Promise.all(keys.map(loadTile));
 
   // MAKA discard boxes (top discard choices by ukeire)
-  const makaInfo = (function(){
-    try {
-      return computeTopDiscardsForMaka(groups);
-    } catch (e) {
-      return { map: new Map(), bestTotal: 0 };
-    }
-  })();
+// Only show these overlays when "Include ukeire" is ON.
+const showMaka = !!(showUkeireEl && showUkeireEl.checked);
 
+const makaInfo = (function(){
+  if (!showMaka) return { map: new Map(), bestTotal: 0 };
+  try {
+    return computeTopDiscardsForMaka(groups);
+  } catch (e) {
+    return { map: new Map(), bestTotal: 0 };
+  }
+})();
 
-  const baseH=Math.max(...keys.map(k=>cache.get(k).height));
-  const TOP_PAD = Math.round(baseH * 0.30); // tighter headroom so MAKA boxes sit near canvas top // headroom for MAKA boxes sitting on tiles
+const baseH=Math.max(...keys.map(k=>cache.get(k).height));
+    // Keep the canvas at its original size when MAKA overlays are disabled.
+  const TOP_PAD = (showMaka && makaInfo && makaInfo.map && makaInfo.map.size) ? Math.round(baseH * 0.30) : 0;
   let width=0;
   groups.forEach((g,i)=>{
     g.tiles.forEach(t=>{
@@ -2619,7 +2623,7 @@ if (ind && doraTile) {
         // MAKA discard box overlays on top of the tile (only for 14-tile non-agari hands)
         try {
           const di = keyToIndex(t.key);
-          if (di != null && makaInfo && makaInfo.map && makaInfo.map.has(di)) {
+          if (showMaka && di != null && makaInfo && makaInfo.map && makaInfo.map.has(di)) {
             // Leftmost-only: if multiple copies of the same tile exist, only label the first one.
             if (!makaSeen.has(t.key)) {
               makaSeen.add(t.key);

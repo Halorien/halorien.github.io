@@ -160,8 +160,55 @@ button { padding:6px 12px; cursor:pointer; }
 :root{ --winTileH: clamp(24px, 3.2vw, 56px); --block-gap: 12px; }
 
 @media (max-width: 520px){
-  :root{ --winTileH: clamp(20px, 6.2vw, 34px); --block-gap: 12px; }
+  :root{ --winTileH: clamp(20px, 6.2vw, 34px); --block-gap: 10px; --w3Gap: 16px; }
+
+  /* Tighter bezel/screen on small phones */
+  .w3Frame{ padding:10px; border-radius:12px; }
+  .w3Box{ padding:10px 10px; }
+
+  /* Slightly tighter vertical rhythm */
+  .w3Rows{ gap:12px; }
+  .ukeireWinRows{ gap:8px; }
+
+  /* Pills: a little smaller */
+  .w3Pill{ font-size:12px; padding:5px 8px; }
+  .ukeireDrawBox{ padding:8px 10px; }
+
+  /* Reduce inter-block spacing so tiles get more room */
+  .w3BlocksLeft, .w3BlocksRight{ gap:10px; }
+
+  /* Block label chips slightly smaller */
+  .w3BlockLabel code{ font-size:11px; padding:3px 5px; border-radius:7px; }
+}
+
+@media (max-width: 380px){
+  /* Ultra-narrow: avoid a giant reserved separator gap.
+     Switch the internal render row to flex so the winning shape and draw hug the '+' with a simple gap. */
+  .w3BlocksRow{
+    display:flex !important;
+    width:100% !important;
+    justify-content:center;
+    align-items:flex-start;
+    gap: 12px;
   }
+  .w3BlocksLeft,
+  .w3BlocksRight{
+    display:inline-flex;
+    flex-wrap:wrap;
+    gap: 12px;
+    align-items:flex-start;
+    width:auto;
+  }
+  .w3Sep{
+    width:auto !important;
+    height:auto !important;
+    align-self:center;
+    padding: 0 2px;
+  }
+  .w3DrawGroup{ margin-left: 0; }
+}
+
+}
 
 /*  box: shrink-wrap to its content (avoid big empty right area) */
 /* Shrink-wrap  box to content (no empty green space) */
@@ -178,6 +225,12 @@ button { padding:6px 12px; cursor:pointer; }
   margin: 0;
   border-radius: 0;
   overflow: visible;
+}
+
+@media (max-width: 700px){
+  /* On phones, keep the whole panel a consistent full width (don’t let Chiitoi shrink-wrap it). */
+  .tsumoBox{ width: 100%; }
+  .w3Frame{ width: 100%; }
 }
 
 /* Tag pill (Chiitoi/Standard) */
@@ -232,10 +285,12 @@ button { padding:6px 12px; cursor:pointer; }
 
 
 .w3Row{
-  display: grid;
-  grid-template-columns: max-content 1fr max-content;
+  display:grid;
+  grid-template-columns: max-content 1fr;
   column-gap: 18px;
   align-items: start;
+  justify-items: stretch;
+  width: 100%;
   min-width: 0;
 }
 
@@ -253,26 +308,6 @@ button { padding:6px 12px; cursor:pointer; }
   text-align: center;
   min-width: 84px;
 }
-
-.w3Compact{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  white-space: nowrap;
-
-  align-self:center;}
-.w3Compact code{
-  display:inline-block;
-  padding: 6px 10px;
-  border-radius: 10px;
-  background: rgba(0,0,0,0.55);
-  color: var(--compactTextColor);
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  font-size: 14px;
-  line-height: 1.1;
-}
-
 /* Center label + compact vertically against the TILE STRIP (not tile+block-label stack) */
 .w3TileBand{
   height: var(--w3TileH);
@@ -288,28 +323,13 @@ button { padding:6px 12px; cursor:pointer; }
   width: auto;
   display: block;
 }
-/* Compact column wants to hug the right side, but still center vertically */
-.w3Compact .w3TileBand{
-  justify-content: flex-end;
-}
-
 /* Make sure both side columns align to the top of the row,
    so their "tile band" starts where the tiles start */
-.w3Tag,
-.w3Compact{
-  align-self: start;
-}
+.w3Tag{  align-self: start; }
 
-.w3RenderCell{ min-width: 0; }
+.w3RenderCell{ min-width:0; width:100%; justify-self:stretch; }
 
-.w3Render{ display:block; }
-.w3BlocksRow{
-  display:flex;
-  flex-wrap: nowrap;
-  gap: 12px;
-  align-items: flex-start;
-  width: max-content;
-}
+.w3Render{ display:block; width:100%; }
 
 .w3Block{
   display:flex;
@@ -351,7 +371,7 @@ button { padding:6px 12px; cursor:pointer; }
 .w3More{ opacity: 0.85; padding-top: 4px; }
 
 
-@media (max-width: 920px){
+@media (max-width: 700px){
   .w3Row{
     grid-template-columns: 1fr;
     row-gap: 10px;
@@ -361,28 +381,11 @@ button { padding:6px 12px; cursor:pointer; }
     justify-content:center !important;
     width:100% !important;
   }
-  .w3Compact{
-    justify-content:center !important;
-    width:100% !important;
-  }
-  .w3Compact .w3TileBand{
-    justify-content:center !important;
-    width:100% !important;
-  }
-  .w3Compact code{
-    margin-left:auto;
-    margin-right:auto;
-  }
-  .w3Pill{ min-width: unset; }
+.w3Pill{ min-width: unset; }
 }
 .w3Row, .w3Rows, .w3RenderCell{
   background: transparent !important;
 }
-
-.w3Compact{
-  align-items: center !important;
-}
-
 /* ===== Remove outer wrapper box around Winning Shapes (keep inner w3Box) ===== */
 .tsumoBox{
   background: transparent !important;
@@ -396,17 +399,12 @@ button { padding:6px 12px; cursor:pointer; }
 
 :root{ --w3Gap: 22px; }
 .w3Row{
-  column-gap: var(--w3Gap) !important; /* keep render/compact comfortably separated */
+  column-gap: var(--w3Gap) !important;
 }
 .w3LabelCell{
   display:flex;
   align-items:center;
 }
-.w3CompactCell{
-  display:flex;
-  align-items:center;
-}
-
 /* Highlight winning tile text in Compact / BlockCompact */
 .w3WinText{
   color: #ffd740;
@@ -448,10 +446,13 @@ button { padding:6px 12px; cursor:pointer; }
 /* --- Aligned '+' separator column for winning shapes --- */
 .w3BlocksRow{
   display: grid;
-  grid-template-columns: max-content var(--w3SepColW, 26px) max-content;
+  grid-template-columns: minmax(0, 1fr) var(--w3SepColW, 26px) minmax(0, var(--w3RightW, max-content));
   column-gap: 12px;
   align-items: start;
+  width: 100%;
 }
+.w3BlocksLeft{ justify-self:end; }
+.w3BlocksRight{ justify-self:start; }
 .w3BlocksLeft,
 .w3BlocksRight{
   display: inline-flex;
@@ -492,12 +493,12 @@ button { padding:6px 12px; cursor:pointer; }
 .ukeireWinRows{ display:flex; flex-direction:column; gap: 10px; }
 .ukeireWinRow{
   display:grid;
-  grid-template-columns: max-content 1fr max-content;
+  grid-template-columns: max-content 1fr;
   column-gap: 18px;
   align-items: start;
   min-width: 0;
 }
-@media (max-width: 920px){
+@media (max-width: 700px){
   .ukeireWinRow{ grid-template-columns: 1fr; row-gap: 10px; }
 }
 
@@ -551,6 +552,28 @@ button { padding:6px 12px; cursor:pointer; }
   gap: 6px;
   margin-left: 6px;
   vertical-align: top;
+}
+
+/* Ultra-narrow: render win-shape + winning tile as a simple “double gap”, no reserved '+' column.
+   Keep the gap proportional on tiny screens so it never becomes cartoonishly large. */
+.w3InlineRow{
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: max-content;
+  gap: clamp(6px, calc(var(--w3TileH) * 0.15), 12px);
+}
+.w3Render{ width: 100%; }
+.w3RenderCell{ overflow: hidden; }
+.w3RenderCell .w3Render{ display:flex; justify-content:center; }
+.w3InlineDoubleGap{
+  display: inline-block;
+  width: clamp(8px, calc(var(--w3TileH) * 0.22), 16px);
+  height: 1px;
+}
+@media (max-width: 560px){
+  .w3DrawGroup{ margin-left: 0; }
 }
 
 
@@ -991,6 +1014,11 @@ function reorderBlocksForWin(blocks, winIdx) {
   return reordered;
 }
 
+function isUltraNarrow(){
+  try{ return !!(window.matchMedia && window.matchMedia('(max-width: 560px)').matches); }
+  catch(e){ return false; }
+}
+
 function blocksToImgHtml(blocks, winningKey) {
   const winIdx = winningKey ? keyToIndex(winningKey) : null;
   const displayBlocks = (winIdx != null) ? reorderBlocksForWin(blocks, winIdx) : blocks;
@@ -1045,6 +1073,12 @@ function blocksToImgHtml(blocks, winningKey) {
     }
   }
 
+  // Ultra-narrow: avoid reserving a whole "+" column (which can turn into a comically large gap).
+  if (isUltraNarrow() && rightHtml){
+    const row = `<div class="w3InlineRow">${leftHtml}${rightHtml ? `<span class="w3InlineDoubleGap"></span>${rightHtml}` : ``}</div>`;
+    return `<div class="w3Render">${row}</div>`;
+  }
+
   const row = `<div class="w3BlocksRow"><div class="w3BlocksLeft">${leftHtml}</div><div class="w3Sep">+</div><div class="w3BlocksRight">${rightHtml || ""}</div></div>`;
   return `<div class="w3Render">${row}</div>`;
 }
@@ -1060,16 +1094,210 @@ function hookWinningShapesImageLoads(containerEl, rerun){
       pending++;
       img.addEventListener('load', () => {
         pending--;
-        if (pending <= 0) rerun();
+        if (pending <= 0) requestAnimationFrame(()=>rerun());
       }, {once:true});
       img.addEventListener('error', () => {
         pending--;
-        if (pending <= 0) rerun();
+        if (pending <= 0) requestAnimationFrame(()=>rerun());
       }, {once:true});
     }
   });
-  if (pending === 0) rerun();
+  // If everything is already cached/loaded, run sizing on the next frame so layout is settled.
+  if (pending === 0) requestAnimationFrame(()=>rerun());
 }
+
+// Scale tiles in W3 renderers to better fill available width.
+// Uses measured content width at a baseline height, then scales the tile height.
+function fitW3Tiles(rootEl){
+  if (!rootEl) return;
+  const frame = (rootEl.classList && rootEl.classList.contains('w3Frame')) ? rootEl : (rootEl.closest ? rootEl.closest('.w3Frame') : null) || rootEl;
+  const rows = frame.querySelectorAll ? Array.from(frame.querySelectorAll('.w3BlocksRow, .w3InlineRow')) : [];
+  if (!rows.length) return;
+
+  const BASE_H = 30;
+  const MIN_H  = 20;
+  const MAX_H  = 140;
+
+  const setH = (h) => {
+    try{
+      frame.style.setProperty('--w3TileH', h + 'px');
+      frame.style.setProperty('--w3SepColW', Math.ceil(h * 0.82) + 'px');
+    }catch(e){}
+  };
+
+  // Baseline
+  setH(BASE_H);
+
+
+  // Compute a fixed right-column width so the '+' spine aligns across rows.
+  // (We measure the natural width of the right-hand blocks at the baseline tile size.)
+  let maxRight = 0;
+  rows.forEach(r => {
+    const right = r.querySelector ? r.querySelector('.w3BlocksRight') : null;
+    if (right) maxRight = Math.max(maxRight, right.scrollWidth || right.getBoundingClientRect().width || 0);
+  });
+  if (maxRight > 0) {
+    try { frame.style.setProperty('--w3RightW', Math.ceil(maxRight) + 'px'); } catch(e){}
+  }
+
+  // Measure content width by temporarily switching the row to shrink-wrapped, max-content columns.
+  let maxContent = 0;
+  const prev = rows.map(r => ({
+    w: r.style.width,
+    gtc: r.style.gridTemplateColumns
+  }));
+
+  rows.forEach(r => {
+    if (r.classList && r.classList.contains('w3BlocksRow')){
+      r.style.gridTemplateColumns = 'max-content var(--w3SepColW, 26px) max-content';
+      r.style.width = 'max-content';
+    }
+  });
+  rows.forEach(r => { maxContent = Math.max(maxContent, r.scrollWidth || 0); });
+  rows.forEach((r, i) => {
+    r.style.width = prev[i].w || '';
+    r.style.gridTemplateColumns = prev[i].gtc || '';
+  });
+
+  const avail = (frame.clientWidth || 0);
+  if (!avail || !maxContent) return;
+
+  // First pass: scale to fill.
+  let h = Math.round(BASE_H * (avail / maxContent));
+  h = Math.max(MIN_H, Math.min(MAX_H, h));
+  setH(h);
+
+  // Update right-column width at the chosen size so it won't overflow.
+  try{
+    let mr = 0;
+    rows.forEach(r => {
+      const right = r.querySelector ? r.querySelector('.w3BlocksRight') : null;
+      if (right) mr = Math.max(mr, right.scrollWidth || right.getBoundingClientRect().width || 0);
+    });
+    if (mr > 0) frame.style.setProperty('--w3RightW', Math.ceil(mr) + 'px');
+  }catch(e){}
+
+    // Safety: if we overflow due to rounding or row content pushes into the Tag pill area,
+  // step down until *both*:
+  //  1) the widest row content fits within the frame width (shrink-wrap test), and
+  //  2) the left/right content stays inside its render cell (no overlap into Tag pills).
+  const shrinkWrapWorst = () => {
+    let worst = 0;
+    rows.forEach(r => {
+      // Inline rows aren’t CSS grids; just measure their scrollWidth directly.
+      if (!r.classList || !r.classList.contains('w3BlocksRow')){
+        worst = Math.max(worst, r.scrollWidth || 0);
+        return;
+      }
+      const ow = r.style.width, og = r.style.gridTemplateColumns;
+      r.style.gridTemplateColumns = 'max-content var(--w3SepColW, 26px) max-content';
+      r.style.width = 'max-content';
+      worst = Math.max(worst, r.scrollWidth || 0);
+      r.style.width = ow || '';
+      r.style.gridTemplateColumns = og || '';
+    });
+    return worst;
+  };
+
+  const boundsOk = () => {
+    // Check *content* bounds, not the row box (the row is width:100% so it won't show overflow).
+    for (const r of rows) {
+      const cell = (r.closest && r.closest('.w3RenderCell')) || r.parentElement;
+      if (!cell) continue;
+      const cellRect = cell.getBoundingClientRect();
+
+      // Inline rows don’t have left/sep/right columns.
+      if (r.classList && r.classList.contains('w3InlineRow')){
+        const rr = r.getBoundingClientRect();
+        const eps = 1;
+        if (rr.left < cellRect.left - eps) return false;
+        if (rr.right > cellRect.right + eps) return false;
+        continue;
+      }
+
+      const leftEl = r.querySelector && r.querySelector('.w3BlocksLeft');
+      const sepEl  = r.querySelector && r.querySelector('.w3Sep');
+      const rightEl= r.querySelector && r.querySelector('.w3BlocksRight');
+      if (!leftEl || !rightEl || !sepEl) continue;
+
+      const leftR = leftEl.getBoundingClientRect();
+      const sepR  = sepEl.getBoundingClientRect();
+      const rightR= rightEl.getBoundingClientRect();
+
+      // Allow a tiny epsilon for subpixel rounding.
+      const eps = 1;
+      if (leftR.left < cellRect.left - eps) return false;       // overflow into Tag pill column (left)
+      if (rightR.right > cellRect.right + eps) return false;    // overflow out of render cell (right)
+      // Also keep the '+' itself inside the cell (paranoia).
+      if (sepR.left < cellRect.left - eps || sepR.right > cellRect.right + eps) return false;
+    }
+    return true;
+  };
+
+  let guard = 28;
+  while (guard-- > 0 && h > MIN_H) {
+    // Keep right-column width in sync at current size
+    try{
+      let mr = 0;
+      rows.forEach(r => {
+        const right = r.querySelector ? r.querySelector('.w3BlocksRight') : null;
+        if (right) mr = Math.max(mr, right.scrollWidth || right.getBoundingClientRect().width || 0);
+      });
+      if (mr > 0) frame.style.setProperty('--w3RightW', Math.ceil(mr) + 'px');
+    }catch(e){}
+
+    const worst = shrinkWrapWorst();
+    const ok = (worst <= avail) && boundsOk();
+    if (ok) break;
+
+    h -= 1;
+    setH(h);
+  }
+}
+
+
+
+let __w3ResizeHooked = false;
+const __w3RO = (typeof ResizeObserver !== 'undefined') ? new ResizeObserver((entries) => {
+  // ResizeObserver can fire a lot; batch with rAF per frame
+  for (const ent of entries) {
+    const el = ent.target;
+    if (!el || !el.classList || !el.classList.contains('w3Frame')) continue;
+    if (el.__w3FitPending) continue;
+    el.__w3FitPending = true;
+    requestAnimationFrame(() => {
+      el.__w3FitPending = false;
+      fitW3Tiles(el);
+    });
+  }
+}) : null;
+
+function hookW3ResizeOnce(){
+  if (__w3ResizeHooked) return;
+  __w3ResizeHooked = true;
+
+  // Window resize (covers most cases)
+  window.addEventListener('resize', () => {
+    document.querySelectorAll('.w3Frame').forEach(f => fitW3Tiles(f));
+  });
+
+  // Also observe individual frames so resizing containers / sidebars triggers re-fit
+  if (__w3RO){
+    // Observe existing frames now…
+    document.querySelectorAll('.w3Frame').forEach(f => __w3RO.observe(f));
+    // …and any frames added later.
+    const mo = new MutationObserver(() => {
+      document.querySelectorAll('.w3Frame').forEach(f => {
+        if (!f.__w3Observed){
+          f.__w3Observed = true;
+          __w3RO.observe(f);
+        }
+      });
+    });
+    mo.observe(document.body, {childList:true, subtree:true});
+  }
+}
+
 
 
 function blockToCompact(block) {
@@ -1154,6 +1382,9 @@ function renderTsumoMessage(groups) {
     const box = document.createElement("div");
     box.className = "tsumoBox";
 
+    // We'll run a sizing pass after the box is actually attached to the DOM.
+    let __w3FrameForSizing = null;
+
     if (blocks) {
       // Build blocks2 in the SAME order we will render tiles:
       // - move the block containing the winning tile to the end
@@ -1226,6 +1457,7 @@ function renderTsumoMessage(groups) {
     const w3Frame = document.createElement("div");
     w3Frame.className = "w3Frame";
     w3Frame.appendChild(w3Box);
+    __w3FrameForSizing = w3Frame;
 
       const w3Rows = document.createElement("div");
       w3Rows.className = "w3Rows";
@@ -1243,59 +1475,14 @@ function renderTsumoMessage(groups) {
         tag.className = "w3Tag";
         tag.innerHTML = `<div class="w3TileBand"><span class="w3Pill">${tagText}</span></div>`;
 
-        // Compact must reflect the rendered order
         const winningKey = getWinningKeyFromGroups(groups);
-        const winIdx = winningKey ? keyToIndex(winningKey) : null;
-        const displayBlocks = (winIdx != null) ? reorderBlocksForWin(sh.blocks, winIdx) : sh.blocks;
-
-        const blockGroupsLocal = displayBlocks.map(b => ({
-          tiles: b.tiles.map(idx => ({ key: indexToKey(idx, null), rot: 0, dora: false }))
-        }));
-        
-        // Build Compact to match rendered blocks: split the drawn tile into its own token
-        const winKey = winningKey;
-        const winIdx2 = winKey ? keyToIndex(winKey) : null;
-
-        const blockTokens = [];
-        for (let bi = 0; bi < displayBlocks.length; bi++) {
-          const t = displayBlocks[bi].tiles.slice();
-          const isLast = (bi === displayBlocks.length - 1);
-
-          if (isLast && winIdx2 != null && t.length >= 2 && t[t.length - 1] === winIdx2) {
-            const mainTiles = t.slice(0, -1);
-            const winTok = winKey; // preserve aka-5 if present
-
-            // completed portion + separator + winning shape (main) + drawn tile
-            blockTokens.push('+');
-            blockTokens.push(blockTilesToCompact(mainTiles));
-            blockTokens.push(winTok);
-          } else {
-            blockTokens.push(blockTilesToCompact(t));
-          }
-        }
-
-        // Now format like the rest of the UI (drop repeated suits), and color the winning token yellow.
-        let pretty = suppressRepeatedSuits(blockTokens.join(" "));
-        if (winKey) {
-          const suit = winKey.slice(-1);
-          const digit = winKey[0];
-          pretty = pretty.replace(new RegExp(`${digit}${suit}$`), `<span class="w3WinText">$&</span>`);
-        }
-        // Style the separator
-        pretty = pretty.replace(/\+/g, `<span class="w3SepText">+</span>`);
-
 
         const render = document.createElement("div");
         render.className = "w3RenderCell";
         render.innerHTML = blocksToImgHtml(sh.blocks, winningKey);
 
-        const compact = document.createElement("div");
-        compact.className = "w3Compact";
-        compact.innerHTML = `<div class="w3TileBand"><code>${pretty}</code></div>`;
-
         row.appendChild(tag);
         row.appendChild(render);
-        row.appendChild(compact);
 
         w3Rows.appendChild(row);
       }
@@ -1308,9 +1495,12 @@ function renderTsumoMessage(groups) {
       }
 
       w3Box.appendChild(w3Rows);
-      
-    requestAnimationFrame(()=>{ syncW3ToMainHand(w3Frame); fitW3Tiles(w3Frame); });
 box.appendChild(w3Frame);
+
+      // Make tiles expand/shrink to better fill the available width (especially on phone).
+      hookW3ResizeOnce();
+      // Image-load hook helps with cold-cache loads, but we *also* do a post-attach sizing pass below.
+      hookWinningShapesImageLoads(w3Frame, () => fitW3Tiles(w3Frame));
 
       // Width: match the main rendered hand canvas
       try {
@@ -1328,6 +1518,16 @@ box.appendChild(w3Frame);
     }
 
     ukeireWrapEl.appendChild(box);
+
+    // IMPORTANT: the first sizing pass must happen AFTER the DOM has laid out this new content.
+    // Otherwise widths can be zero and nothing scales until the user resizes.
+    if (__w3FrameForSizing) {
+      requestAnimationFrame(() => {
+        fitW3Tiles(__w3FrameForSizing);
+        // One extra frame helps on some browsers where fonts/images affect layout asynchronously.
+        requestAnimationFrame(() => fitW3Tiles(__w3FrameForSizing));
+      });
+    }
   }
 
   return true;
@@ -1399,6 +1599,12 @@ function renderUkeireWinningShapesFor13Tenpai(w3Box, baseCounts13, presentKeys, 
       drawGroup += `<span class="w3Block"><span class="w3BlockTiles">${winImg}</span><span class="w3BlockLabel"><code>${winTok}</code></span></span>`;
     }
     if (drawGroup) rightHtml += `<span class="w3DrawGroup">${drawGroup}</span>`;
+
+    // Ultra-narrow: avoid a reserved "+" column that can balloon into a huge gap.
+    if (isUltraNarrow()){
+      const row = `<div class="w3InlineRow">${leftHtml}<span class="w3InlineDoubleGap"></span>${rightHtml}</div>`;
+      return `<div class="w3Render">${row}</div>`;
+    }
 
     const row = `<div class="w3BlocksRow"><div class="w3BlocksLeft">${leftHtml}</div><div class="w3Sep">+</div><div class="w3BlocksRight">${rightHtml}</div></div>`;
     return `<div class="w3Render">${row}</div>`;
@@ -1522,34 +1728,8 @@ function renderUkeireWinningShapesFor13Tenpai(w3Box, baseCounts13, presentKeys, 
     render.className = "w3RenderCell";
     render.innerHTML = blocksToImgHtmlMulti(sh.blocks, winKeysForShape);
 
-    const compact = document.createElement("div");
-    compact.className = "w3Compact";
-
-    const primaryWinIdx = keyToIndex(winKeysForShape[0] || winKeysAll[0]);
-    const disp = (primaryWinIdx != null) ? reorderBlocksForWin(sh.blocks, primaryWinIdx) : sh.blocks;
-
-    const blockTokens = [];
-    for (let bi = 0; bi < disp.length; bi++) {
-      const t = disp[bi].tiles.slice();
-      const isLast = (bi === disp.length - 1);
-      if (isLast && t.length >= 2) {
-        const mainTiles = t.slice(0, -1);
-        blockTokens.push('+');
-        blockTokens.push(blockTilesToCompact(mainTiles));
-        const winsHtml = winKeysForShape.map(k=>`<span class="w3WinText">${k}</span>`).join("-");
-        blockTokens.push(winsHtml);
-      } else {
-        blockTokens.push(blockTilesToCompact(t));
-      }
-    }
-    let pretty = suppressRepeatedSuits(blockTokens.join(" "));
-    pretty = pretty.replace(/\+/g, `<span class="w3SepText">+</span>`);
-
-    compact.innerHTML = `<div class="w3TileBand"><code>${pretty}</code></div>`;
-
     row.appendChild(tag);
     row.appendChild(render);
-    row.appendChild(compact);
 
     rowsWrap.appendChild(row);
   }
@@ -1563,6 +1743,11 @@ function renderUkeireWinningShapesFor13Tenpai(w3Box, baseCounts13, presentKeys, 
 
   drawBox.appendChild(rowsWrap);
   w3Box.appendChild(drawBox);
+
+  // After images load, scale tiles so the render fills the available width.
+  hookW3ResizeOnce();
+  const frame = (w3Box && w3Box.closest) ? w3Box.closest('.w3Frame') : null;
+  hookWinningShapesImageLoads(drawBox, () => fitW3Tiles(frame || drawBox));
 }
 
 
@@ -1735,6 +1920,12 @@ function renderUkeireTable(groups) {
   }
 
   ukeireWrapEl.appendChild(w3Frame);
+
+  // Initial autosize pass: run after this table is attached and laid out.
+  requestAnimationFrame(() => {
+    fitW3Tiles(w3Frame);
+    requestAnimationFrame(() => fitW3Tiles(w3Frame));
+  });
 }
 
 const cv = document.getElementById("cv");

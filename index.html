@@ -52,14 +52,6 @@ button { padding:6px 12px; cursor:pointer; }
   #ukeireWrap th { background: #1b1b1b; position: sticky; top: 0; z-index: 1; }
   #ukeireWrap .tileimg { height: 28px; width: auto; vertical-align: middle; margin-right: 2px; }
   #ukeireWrap .warn { margin-top: 8px; color: #ffb454; font-size: 14px; }
-
-  #ukeireWrap .tsumoBox { 
-    border: 1px solid rgba(126,231,135,0.35);
-    background: rgba(126,231,135,0.08);
-    padding: 10px 12px;
-    border-radius: 10px;
-    margin-top: 10px;
-  }
   #ukeireWrap .tsumoTitle {
   font-size: 22px;
   font-weight: 900;
@@ -74,19 +66,6 @@ button { padding:6px 12px; cursor:pointer; }
     align-items: flex-end;
     column-gap: 14px; /* gap between blocks */
     row-gap: 10px;
-  }
-  #ukeireWrap .tsumoBlock{ display:flex; flex-direction:column; align-items:center; margin-right:0; }
-  #ukeireWrap .tsumoHand img {
-    height: 44px;
-    width: auto;
-    display: block;
-  
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  #ukeireWrap .tsumoBlock .tileimg { margin-right: 0 !important; }
-  #ukeireWrap .tsumoHand img.winTile {
-    transform: translateY(-8px);
   }
   #ukeireWrap .tsumoHand img {
     height: 44px;
@@ -169,82 +148,37 @@ button { padding:6px 12px; cursor:pointer; }
 
 
 /* TSUMO winning-shape list */
-.tsumoShapeLine{ display:grid; grid-template-columns: var(--tagColW, max-content) var(--renderColW, max-content) 22px var(--compactColW, max-content); align-items:center; column-gap:14px; row-gap:6px; width:fit-content; max-width:100%; }
 .tsumoShapeRender{display:block; width:100%; overflow:visible; min-width:0;}
 .tsumoMeld{ display:inline-flex; gap:2px; align-items:flex-end; padding:2px 4px; border:none; background:transparent; overflow:visible; }
 .tsumoMeld img{ height:30px; width:auto; display:block; }
-.tsumoShapeCompact code{ display:inline-block; white-space:nowrap; overflow:hidden; max-width:100%; padding-bottom:0; font-size:13px; }
-
 /* TSUMO winning-shape list */
-.tsumoShapes{ margin-top:6px; display:flex; flex-direction:column; gap:18px; width:100%; align-items:stretch; }
-.tsumoShapeLine{ display:grid; grid-template-columns: var(--tagColW, max-content) var(--renderColW, max-content) 22px var(--compactColW, max-content); align-items:center; column-gap:14px; row-gap:6px; width:fit-content; max-width:100%; }
 .tsumoShapeTag{ width: var(--tagColW, max-content); display:flex; align-items:center; justify-content:center; }
 .tsumoShapeMore{ color:#bdbdbd; font-size:12px; margin-top:4px; }
-.tsumoBlocksRow{ display:flex; width:100%; justify-content:flex-start; align-items:flex-end; gap: var(--block-gap, 12px); row-gap: 14px; overflow:visible; flex-wrap:nowrap; }
-
-.tsumoBlockTiles{ display:inline-flex; gap:0px; align-items:flex-end; overflow:visible; }
-
-.tsumoBlockLabel{ margin-top:6px; font-size:12px; opacity:0.95; line-height:1; }
-
-.tsumoBlockLabel code{white-space:nowrap;}
-
-.tsumoBlockTiles img{ height: var(--winTileH); width:auto; display:block; flex:0 0 auto; }
-
-.tsumoBlocksRow, .tsumoBlock, .tsumoBlockTiles{ display:inline-flex; gap:0px; align-items:flex-end; overflow:visible; }
-
 .tsumoShapeMain{ display:block; width: var(--renderColW, max-content); overflow:visible; justify-self:start; }
 
-
-.tsumoShapeCompact{ display:flex; align-items:center; justify-content:flex-end; width: var(--compactColW, max-content); min-width:0; }
 
 :root{ --winTileH: clamp(24px, 3.2vw, 56px); --block-gap: 12px; }
 
 @media (max-width: 520px){
-  .tsumoBlocksRow{ display:flex; width:100%; justify-content:flex-start; align-items:flex-end; gap: var(--block-gap, 12px); row-gap: 14px; overflow:visible; flex-wrap:nowrap; }
-  .tsumoShapeCompact code{ display:inline-block; white-space:nowrap; overflow:hidden; max-width:100%; padding-bottom:0; font-size:13px; }
-
-  .tsumoShapes{ margin-top:6px; display:flex; flex-direction:column; gap:18px; width:100%; align-items:stretch; }
-  .tsumoShapeLine{ display:grid; grid-template-columns: var(--tagColW, max-content) var(--renderColW, max-content) 22px var(--compactColW, max-content); align-items:center; column-gap:14px; row-gap:6px; width:fit-content; max-width:100%; }
   :root{ --winTileH: clamp(20px, 6.2vw, 34px); --block-gap: 12px; }
-  .tsumoShapeLine{ display:grid; grid-template-columns: var(--tagColW, max-content) var(--renderColW, max-content) 22px var(--compactColW, max-content); align-items:center; column-gap:14px; row-gap:6px; width:fit-content; max-width:100%; }
-  .tsumoShapeCompact{ display:flex; align-items:center; justify-content:flex-end; width: var(--compactColW, max-content); min-width:0; }
-  .tsumoShapeLine > .tsumoShapeCompact{ display:flex; align-items:center; justify-content:flex-end; width: var(--compactColW, max-content); min-width:0; }
-}
+  }
 
 /*  box: shrink-wrap to its content (avoid big empty right area) */
-.tsumoBox, #tsumoBox, .winShapesBox, #winShapesBox{
-  width: fit-content;
-  max-width: 100%;
-}
-
-.tsumoBlockTiles img{ margin:0; padding:0; }
-
-.tsumoShapeSpacer{ width:22px; }
-
-.winTileGap{ display:inline-flex; margin-left:8px; }
-
 /* Shrink-wrap  box to content (no empty green space) */
-.tsumoBox, #tsumoBox, .winShapesBox, #winShapesBox{
-  width: fit-content;
-  max-width: 100%;
-}
 /* Rows/lines shrink to their content; compact won't create a huge empty column */
-.tsumoShapes{ width: fit-content; max-width:100%; align-items:flex-start; }
-.tsumoShapeLine{ display:grid; grid-template-columns: var(--tagColW, max-content) var(--renderColW, max-content) 22px var(--compactColW, max-content); align-items:center; column-gap:14px; row-gap:6px; width:fit-content; max-width:100%; }
-
-
-
-
-.tsumoBlocksRow{ display:flex; width:100%; justify-content:flex-start; align-items:flex-end; gap: var(--block-gap, 12px); row-gap: 14px; overflow:visible; flex-wrap:nowrap; }
-
 /* Keep box tight to content (no big empty green areas) */
-.tsumoBox, #tsumoBox, .winShapesBox, #winShapesBox{
+/* Generic wrapper used by renderTsumoMessage(); keep it neutral so it won't fight w3Box styling */
+.tsumoBox{
   width: fit-content;
   max-width: 100%;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+  border-radius: 0;
+  overflow: visible;
 }
-.tsumoShapes{ width: fit-content; max-width:100%; }
-
-
 
 /* Tag pill (Chiitoi/Standard) */
 .tsumoTagPill{
@@ -259,8 +193,6 @@ button { padding:6px 12px; cursor:pointer; }
   line-height:1;
   box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
 }
-
-.tsumoShapes{ width: fit-content; max-width:100%; }
 
 /* ===== Option 3: Fresh  Table (w3*) ===== */
 :root{
@@ -290,6 +222,14 @@ button { padding:6px 12px; cursor:pointer; }
 }
 
 .w3Rows{ display:flex; flex-direction:column; gap: 16px; }
+/* Stack multiple winning-tile renders inside a single grouped Winning Draws entry */
+.w3Stack{ display:flex; flex-direction:column; gap: 12px; min-width: 0; }
+.w3StackItem{ display:flex; gap: 12px; align-items:flex-start; min-width: 0; }
+.w3MiniTag{ flex: 0 0 auto; }
+.w3MiniPill{ font-size: 12px; padding: 5px 8px; min-width: unset; }
+.w3MiniRender{ min-width: 0; }
+.w3PillWide{ min-width: unset; }
+
 
 .w3Row{
   display: grid;
@@ -341,6 +281,13 @@ button { padding:6px 12px; cursor:pointer; }
   justify-content: center;
 }
 
+
+/* Ensure any tile image placed directly inside a w3TileBand uses the same sizing */
+.w3TileBand img{
+  height: var(--w3TileH);
+  width: auto;
+  display: block;
+}
 /* Compact column wants to hug the right side, but still center vertically */
 .w3Compact .w3TileBand{
   justify-content: flex-end;
@@ -525,6 +472,87 @@ button { padding:6px 12px; cursor:pointer; }
   color: rgba(126, 231, 135, 0.75);
   user-select: none;
 }
+
+
+
+/* Ukeire: winning shapes by draw (tenpai-only helper section) */
+.ukeireWinTitle{
+  margin-top: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+.ukeireWinTileHeader{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  font-weight: 800;
+}
+.ukeireWinRows{ display:flex; flex-direction:column; gap: 10px; }
+.ukeireWinRow{
+  display:grid;
+  grid-template-columns: max-content 1fr max-content;
+  column-gap: 18px;
+  align-items: start;
+  min-width: 0;
+}
+@media (max-width: 920px){
+  .ukeireWinRow{ grid-template-columns: 1fr; row-gap: 10px; }
+}
+
+/* Per-draw group box inside Ukeire Winning Shapes */
+.ukeireDrawBox{
+  border: 1px solid rgba(126,231,135,0.28);
+  background: rgba(0,0,0,0.18);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-top: 10px;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset;
+}
+.ukeireDrawBox .ukeireWinTileHeader{
+  margin-top: 0;
+}
+
+/* Pill for draw header (matches Standard/Chiitoi pill style) */
+.ukeireDrawPill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:999px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.12);
+  color:#ffffff;
+  font-weight:800;
+  font-size:13px;
+  line-height:1;
+}
+
+
+/* =====================
+   Ukeire table alignment
+   - Center Shanten / Tenpai, Ukeire tiles, and Totals.
+   - Only left-align Discard column when present (14-tile mode => 4 columns).
+   ===================== */
+.w3UkeireTable th,
+.w3UkeireTable td {
+  text-align: center !important;
+}
+.w3UkeireTable:has(th:nth-child(4)) th:first-child,
+.w3UkeireTable:has(th:nth-child(4)) td:first-child {
+  text-align: left !important;
+}
+
+
+/* Ukeire winning-draw: tighten spacing between final block and the completing draw tile(s) */
+.w3DrawGroup{
+  display: inline-flex;
+  gap: 6px;
+  margin-left: 6px;
+  vertical-align: top;
+}
+
 
 </style>
 </head>
@@ -1043,49 +1071,7 @@ function hookWinningShapesImageLoads(containerEl, rerun){
   if (pending === 0) rerun();
 }
 
-function alignWinningShapesColumns(containerEl){
-  if (!containerEl) return;
 
-  const lines = Array.from(containerEl.querySelectorAll('.tsumoShapeLine'));
-  if (lines.length === 0) return;
-
-  // Shared label column width (widest pill)
-  const pillEls = Array.from(containerEl.querySelectorAll(".tsumoTagPill"));
-  const tagW = pillEls.length ? Math.max(...pillEls.map(el => el.getBoundingClientRect().width || 0)) : 0;
-  if (tagW > 0) containerEl.style.setProperty("--tagColW", `${Math.ceil(tagW)}px`);
-
-  // Target render width: widest rendered blocks row
-  const renderWidths = lines.map(l => {
-    const row = l.querySelector('.tsumoShapeMain .tsumoBlocksRow');
-    return row ? (row.scrollWidth || row.getBoundingClientRect().width || 0) : 0;
-  }).filter(w => w > 0);
-  const targetRender = renderWidths.length ? Math.max(...renderWidths) : 0;
-  if (targetRender > 0) containerEl.style.setProperty("--renderColW", `${Math.ceil(targetRender)}px`);
-
-  // Target compact width: widest compact code among rows
-  const compactWidths = lines.map(l => {
-    const code = l.querySelector('.tsumoShapeCompact code');
-    return code ? (code.scrollWidth || code.getBoundingClientRect().width || 0) : 0;
-  }).filter(w => w > 0);
-  const targetCompact = compactWidths.length ? Math.max(...compactWidths) : 0;
-  if (targetCompact > 0) containerEl.style.setProperty("--compactColW", `${Math.ceil(targetCompact)}px`);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Convert a block (tile indices) to a compact string like "123m" or "111z"
 function blockToCompact(block) {
   const idxs = block.tiles.slice().sort((a,b)=>a-b);
   const first = idxs[0];
@@ -1102,6 +1088,21 @@ function blockToCompact(block) {
 
   return digits + suit;
 }
+
+function blocksToCompactString(blocks, winningKey){
+  try {
+    const winIdx = winningKey ? keyToIndex(winningKey) : null;
+    const displayBlocks = (winIdx != null) ? reorderBlocksForWin(blocks, winIdx) : blocks;
+
+    const blockStrs = displayBlocks.map(b => blockToCompact({ tiles: b.tiles.slice() }));
+    const collapsed = collapseSameSuit(blockStrs);
+    const compact = collapsed || blockStrs.join("|");
+    return compact;
+  } catch (e) {
+    return "";
+  }
+}
+
 
 // If all blocks are in the same suited suit (m/p/s) and none are honors,
 // collapse "11s | 123s | ... | 999s" into "11|123|...|999s" like your example.
@@ -1341,6 +1342,231 @@ function buildTileImg(key) {
   return img;
 }
 
+function renderUkeireWinningShapesFor13Tenpai(w3Box, baseCounts13, presentKeys, winningTilesIdxs) {
+  if (!w3Box || !winningTilesIdxs || winningTilesIdxs.length === 0) return;
+
+  const title = document.createElement("div");
+  title.className = "ukeireWinTitle";
+  title.textContent = "Winning shapes by draw";
+  w3Box.appendChild(title);
+
+  const cap = 120;
+
+  // Canonical signature for a shape, with the drawn tile removed.
+  function shapeSignature(blocks, winIdx) {
+    const disp = reorderBlocksForWin(blocks, winIdx);
+    const copy = disp.map(b => b.tiles.slice());
+    const last = copy[copy.length - 1];
+    const p = last.lastIndexOf(winIdx);
+    if (p !== -1) last.splice(p, 1);
+
+    const bstrs = copy.map(t => t.slice().sort((a,b)=>a-b).join(","));
+    bstrs.sort();
+    return bstrs.join("|");
+  }
+
+  // Render blocks like Winning Shapes, but with MULTIPLE drawn tiles displayed as separate one-tile blocks.
+  function blocksToImgHtmlMulti(blocks, winKeys) {
+    const winIdxs = (winKeys || []).map(k => keyToIndex(k)).filter(x => x != null);
+    const primaryWinIdx = winIdxs.length ? winIdxs[0] : null;
+    const displayBlocks = (primaryWinIdx != null) ? reorderBlocksForWin(blocks, primaryWinIdx) : blocks;
+
+    const blockHtml = (tiles, labelOverride=null) => {
+      const imgs = tiles.map(idx => {
+        const k = indexToKey(idx, null);
+        return `<img src="${TILE_DIR}/${k}.png" alt="${k}">`;
+      }).join("");
+      const label = labelOverride || blockTilesToCompact(tiles);
+      return `<span class="w3Block"><span class="w3BlockTiles">${imgs}</span><span class="w3BlockLabel"><code>${label}</code></span></span>`;
+    };
+
+    let leftHtml = "";
+    for (let i = 0; i < displayBlocks.length - 1; i++) leftHtml += blockHtml(displayBlocks[i].tiles);
+
+    const last = displayBlocks[displayBlocks.length - 1].tiles.slice();
+    const mainTiles = last.slice(0, -1);
+    let rightHtml = "";
+    rightHtml += blockHtml(mainTiles);
+
+    // Draw tiles (completing tiles) grouped with tighter spacing
+    let drawGroup = "";
+    for (const wk of (winKeys || [])) {
+      const wi = keyToIndex(wk);
+      if (wi == null) continue;
+      const winK = indexToKey(wi, null);
+      const winImg = `<img src="${TILE_DIR}/${winK}.png" alt="${winK}">`;
+      const winTok = `<span class="w3WinText">${wk}</span>`;
+      drawGroup += `<span class="w3Block"><span class="w3BlockTiles">${winImg}</span><span class="w3BlockLabel"><code>${winTok}</code></span></span>`;
+    }
+    if (drawGroup) rightHtml += `<span class="w3DrawGroup">${drawGroup}</span>`;
+
+    const row = `<div class="w3BlocksRow"><div class="w3BlocksLeft">${leftHtml}</div><div class="w3Sep">+</div><div class="w3BlocksRight">${rightHtml}</div></div>`;
+    return `<div class="w3Render">${row}</div>`;
+  }
+
+  // Collect all winning tiles (keys) that immediately win, with remaining counts.
+  const tileInfos = [];
+  for (const winIdx of winningTilesIdxs) {
+    const remaining = 4 - baseCounts13[winIdx];
+    if (remaining <= 0) continue;
+
+    const counts14 = baseCounts13.slice();
+    counts14[winIdx]++;
+    if (!isAgari(counts14)) continue;
+
+    tileInfos.push({ idx: winIdx, key: indexToKey(winIdx, null), remaining });
+  }
+
+  if (!tileInfos.length) return;
+
+    // For multi-sided waits, display in natural tile order (ascending) rather than by remaining count.
+  tileInfos.sort((a,b)=> a.idx - b.idx);
+  const winKeysAll = tileInfos.map(t => t.key);
+  const totalRemaining = tileInfos.reduce((s,t)=>s+t.remaining,0);
+
+  // Build ONE draw box for all winning tiles (multi-sided waits) — union of all shapes.
+  const drawBox = document.createElement("div");
+  drawBox.className = "ukeireDrawBox";
+
+  const header = document.createElement("div");
+  header.className = "ukeireWinTileHeader";
+
+  const pill = document.createElement("span");
+  pill.className = "ukeireDrawPill";
+  pill.appendChild(document.createTextNode("Draw "));
+  for (let i=0;i<winKeysAll.length;i++) {
+    if (i > 0) pill.appendChild(document.createTextNode("-"));
+    pill.appendChild(buildTileImg(winKeysAll[i]));
+  }
+  pill.appendChild(document.createTextNode(` (${totalRemaining} left)`));
+  header.appendChild(pill);
+  drawBox.appendChild(header);
+
+  // shapeMap: unique shape signature -> {blocks,type, winKeys:Set}
+  const shapeMap = new Map();
+
+  for (const t of tileInfos) {
+    const counts14 = baseCounts13.slice();
+    counts14[t.idx]++;
+
+    // Enumerate shapes for this specific winning tile
+    const shapes = [];
+    const chi = decomposeChiitoiAgari(counts14);
+    if (chi) shapes.push({ blocks: chi.blocks, type: "chiitoi" });
+
+    const standardShapes = enumerateNormalAgariAll(counts14, 500);
+    for (const sh of standardShapes) shapes.push({ blocks: sh.blocks, type: "standard" });
+
+    for (const sh of shapes) {
+      const sig = `${sh.type}:${shapeSignature(sh.blocks, t.idx)}`;
+      if (!shapeMap.has(sig)) {
+        shapeMap.set(sig, { blocks: sh.blocks, type: sh.type, winKeys: new Set([t.key]) });
+      } else {
+        shapeMap.get(sig).winKeys.add(t.key);
+      }
+    }
+  }
+
+  const shapes = Array.from(shapeMap.values());
+  // Order rows by the lowest-valued winning draw (e.g., 1m shapes first, then 4m, then 7m),
+  // then Standard before Chiitoi, then a stable normalized-block key.
+  function minWinIdx(sh) {
+    const ks = Array.from(sh.winKeys || []);
+    if (!ks.length) return 999;
+    let min = 999;
+    for (const k of ks) {
+      const i = keyToIndex(k);
+      if (i != null && i < min) min = i;
+    }
+    return min;
+  }
+  function blocksKey(sh) {
+    return sh.blocks.map(bl=>bl.tiles.slice().sort((x,y)=>x-y).join(',')).sort().join('|');
+  }
+  shapes.sort((a,b)=>{
+    const ma = minWinIdx(a), mb = minWinIdx(b);
+    if (ma !== mb) return ma - mb;
+    const ta = a.type === "standard" ? 0 : 1;
+    const tb = b.type === "standard" ? 0 : 1;
+    if (ta !== tb) return ta - tb;
+    return blocksKey(a).localeCompare(blocksKey(b));
+  });
+
+  const rowsWrap = document.createElement("div");
+  rowsWrap.className = "ukeireWinRows";
+
+  const shown = shapes.slice(0, cap);
+
+  for (const sh of shown) {
+    const row = document.createElement("div");
+    row.className = "ukeireWinRow";
+
+    // Render: show only the win tiles that actually produce THIS shape in the right-most drawn blocks.
+    const winKeysForShape = Array.from(sh.winKeys || new Set(winKeysAll)).sort((a,b)=>keyToIndex(a)-keyToIndex(b));
+
+    const tag = document.createElement("div");
+    tag.className = "w3Tag";
+    let tagText;
+    if (sh.type === "chiitoi") {
+      tagText = "Chiitoi";
+    } else {
+      // Tanki (pair) wait: final winning block is a pair of identical tiles after ordering for this shape.
+      const primaryWinIdx = keyToIndex(winKeysForShape[0] || winKeysAll[0]);
+      const dispForTag = (primaryWinIdx != null) ? reorderBlocksForWin(sh.blocks, primaryWinIdx) : sh.blocks;
+      const lastTiles = dispForTag[dispForTag.length - 1].tiles;
+      const isTanki = (lastTiles.length === 2 && lastTiles[0] === lastTiles[1]);
+      tagText = isTanki ? "Tanki (Pair)" : "Standard";
+    }
+    tag.innerHTML = `<div class="w3TileBand"><span class="w3Pill">${tagText}</span></div>`;
+    const render = document.createElement("div");
+    render.className = "w3RenderCell";
+    render.innerHTML = blocksToImgHtmlMulti(sh.blocks, winKeysForShape);
+
+    const compact = document.createElement("div");
+    compact.className = "w3Compact";
+
+    const primaryWinIdx = keyToIndex(winKeysForShape[0] || winKeysAll[0]);
+    const disp = (primaryWinIdx != null) ? reorderBlocksForWin(sh.blocks, primaryWinIdx) : sh.blocks;
+
+    const blockTokens = [];
+    for (let bi = 0; bi < disp.length; bi++) {
+      const t = disp[bi].tiles.slice();
+      const isLast = (bi === disp.length - 1);
+      if (isLast && t.length >= 2) {
+        const mainTiles = t.slice(0, -1);
+        blockTokens.push('+');
+        blockTokens.push(blockTilesToCompact(mainTiles));
+        const winsHtml = winKeysForShape.map(k=>`<span class="w3WinText">${k}</span>`).join("-");
+        blockTokens.push(winsHtml);
+      } else {
+        blockTokens.push(blockTilesToCompact(t));
+      }
+    }
+    let pretty = suppressRepeatedSuits(blockTokens.join(" "));
+    pretty = pretty.replace(/\+/g, `<span class="w3SepText">+</span>`);
+
+    compact.innerHTML = `<div class="w3TileBand"><code>${pretty}</code></div>`;
+
+    row.appendChild(tag);
+    row.appendChild(render);
+    row.appendChild(compact);
+
+    rowsWrap.appendChild(row);
+  }
+
+  if (shapes.length > cap) {
+    const more = document.createElement("div");
+    more.className = "w3More";
+    more.textContent = `…and ${shapes.length - cap} more`;
+    rowsWrap.appendChild(more);
+  }
+
+  drawBox.appendChild(rowsWrap);
+  w3Box.appendChild(drawBox);
+}
+
+
+
 function renderUkeireTable(groups) {
   if (!ukeireWrapEl) return;
   const enabled = !!(showUkeireEl && showUkeireEl.checked);
@@ -1352,6 +1578,7 @@ function renderUkeireTable(groups) {
 
   const { counts, presentKeys } = groupsToCounts(groups);
   const tileCount = counts.reduce((a,b)=>a+b,0);
+
   // If the hand is already complete (agari), don't show ukeire.
   if (tileCount === 14 && isAgari(counts)) {
     ukeireWrapEl.style.display = "none";
@@ -1368,12 +1595,22 @@ function renderUkeireTable(groups) {
   ukeireWrapEl.style.display = "block";
   ukeireWrapEl.innerHTML = "";
 
+  // W3 styled wrapper (same bezel/screen as Winning Shapes)
+  const w3Frame = document.createElement("div");
+  w3Frame.className = "w3Frame";
+
+  const w3Box = document.createElement("div");
+  w3Box.className = "w3Box";
+  w3Frame.appendChild(w3Box);
+
   const title = document.createElement("div");
   title.className = "ukeireTitle";
   title.textContent = "Ukeire (Tile Acceptance)";
-  ukeireWrapEl.appendChild(title);
+  w3Box.appendChild(title);
 
   const table = document.createElement("table");
+  table.className = "w3UkeireTable";
+
   const thead = document.createElement("thead");
   const headRow = document.createElement("tr");
 
@@ -1430,15 +1667,19 @@ function renderUkeireTable(groups) {
     tdT.textContent = String(total);
     tr.appendChild(tdT);
 
-    return { tr, total, s0 };
+    return { tr, total, s0, tiles };
   }
 
   const badDiscards = [];
 
   if (tileCount === 13) {
     const s0 = shantenMin(counts.slice());
-    const { tr } = rowForBase(counts.slice(), s0, null);
-    tbody.appendChild(tr);
+    const rowObj = rowForBase(counts.slice(), s0, null);
+    tbody.appendChild(rowObj.tr);
+
+    // If tenpai, we'll also show all winning shapes for each acceptance tile below.
+    var __ukeireTenpaiShanten0 = (s0 === 0);
+    var __ukeireWinTilesIdxs = rowObj.tiles || [];
   } else {
     let bestAfterDiscard = Infinity;
     for (let d = 0; d < 34; d++) {
@@ -1468,12 +1709,21 @@ function renderUkeireTable(groups) {
   }
 
   table.appendChild(tbody);
-  ukeireWrapEl.appendChild(table);
+  w3Box.appendChild(table);
 
   const note = document.createElement("div");
   note.className = "ukeireNote";
   note.textContent = "These are the tiles that improve your hand (reduce shanten) on the next draw.";
-  ukeireWrapEl.appendChild(note);
+  w3Box.appendChild(note);
+
+
+  // Tenpai-only: show winning shapes grouped by each draw tile (acceptance tile)
+  try {
+    if (tileCount === 13 && typeof __ukeireTenpaiShanten0 !== "undefined" && __ukeireTenpaiShanten0) {
+      renderUkeireWinningShapesFor13Tenpai(w3Box, counts.slice(), presentKeys, __ukeireWinTilesIdxs);
+    }
+  } catch (e) { /* non-fatal */ }
+
 
   if (badDiscards.length) {
     const warn = document.createElement("div");
@@ -1481,8 +1731,10 @@ function renderUkeireTable(groups) {
     warn.appendChild(document.createTextNode("Do not discard "));
     for (const d of badDiscards) warn.appendChild(buildTileImg(indexToKey(d, presentKeys)));
     warn.appendChild(document.createTextNode(" because you'll be destroying a block and moving back a shanten!"));
-    ukeireWrapEl.appendChild(warn);
+    w3Box.appendChild(warn);
   }
+
+  ukeireWrapEl.appendChild(w3Frame);
 }
 
 const cv = document.getElementById("cv");
@@ -2252,72 +2504,7 @@ if (urlDora !== null) {
 render();
 })();
 
-(function(){
-  let _t = null;
-  window.addEventListener('resize', () => {
-    if (_t) clearTimeout(_t);
-    _t = setTimeout(() => {
-      const shapesDiv = document.querySelector('.tsumoShapes') || document.querySelector('#tsumoShapes') || document.querySelector('.winningShapes');
-      if (shapesDiv) alignWinningShapesColumns(shapesDiv);
-    }, 60);
-  });
-})();
 
-function autosizeW3Tiles(){
-  const box = document.querySelector('.w3Box');
-  if (!box) return;
-
-  // Ensure width var is correct before measuring
-  syncW3WidthToMainHand();
-
-  const vw = window.innerWidth || 900;
-
-  // Column gap between Render and Compact
-  const gap = (vw < 520) ? 16 : 24;
-  document.documentElement.style.setProperty('--w3Gap', gap + 'px');
-
-  const rows = Array.from(box.querySelectorAll('.w3Row'));
-  if (!rows.length) return;
-
-  // --- IMPORTANT: avoid feedback loop ---
-  // Measure intrinsic widths at a fixed baseline tile height,
-  // then scale from that baseline. This prevents "resize -> shrink -> measure smaller -> shrink more".
-  const base = 36;
-  const root = document.documentElement;
-
-  const prevH = getComputedStyle(root).getPropertyValue('--w3TileH').trim();
-  root.style.setProperty('--w3TileH', base + 'px');
-
-  // Force reflow so scrollWidth reflects the baseline tile size
-  void box.offsetWidth;
-
-  let renderCellW = 0;
-  let maxIntrinsic = 0;
-
-  for (const row of rows){
-    const renderCell = row.querySelector('.w3RenderCell');
-    const blocksRow = row.querySelector('.w3BlocksRow');
-    if (!renderCell || !blocksRow) continue;
-
-    renderCellW = Math.max(renderCellW, renderCell.getBoundingClientRect().width || 0);
-    maxIntrinsic = Math.max(maxIntrinsic, blocksRow.scrollWidth || blocksRow.getBoundingClientRect().width || 0);
-  }
-
-  // Restore previous value before potentially returning early
-  if (prevH) root.style.setProperty('--w3TileH', prevH);
-
-  if (renderCellW <= 0 || maxIntrinsic <= 0) return;
-
-  // Keep a little breathing room from the Compact column
-  const safety = (vw < 520) ? 10 : 16;
-  const target = Math.max(40, renderCellW - safety);
-  let scale = target / maxIntrinsic;
-
-  // Clamp to keep it sane visually
-  scale = Math.max(0.90, Math.min(2.6, scale));
-
-  root.style.setProperty('--w3TileH', Math.round(base * scale) + 'px');
-}
 
 function syncW3WidthToMainHand(){
   const cv = document.querySelector('#cv');

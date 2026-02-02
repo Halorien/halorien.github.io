@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Mahjong Photo → Compact</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 20px;
+    }
+    input, button {
+      padding: 8px;
+      margin: 6px 0;
+    }
+    img {
+      max-width: 100%;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+    }
+    pre {
+      background: #f6f6f6;
+      padding: 10px;
+      white-space: pre-wrap;
+    }
+    .ok { color: green; font-weight: bold; }
+    .warn { color: darkorange; font-weight: bold; }
+    .err { color: red; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<h1>Mahjong Photo → Compact Notation</h1>
+
+<p>
+  This is a <b>standalone experiment</b>.  
+  It does not affect the main hand generator.
+</p>
+
+<label>
+  OpenAI API Key:
+  <input id="apiKey" type="password" placeholder="sk-..." size="40">
+</label>
+<br>
+
+<input id="file" type="file" accept="image/*" capture="environment">
+<br>
+
+<button id="run">Transcribe Hand</button>
+
+<div id="status"></div>
+
+<h3>Photo</h3>
+<img id="preview">
+
+<h3>Compact Output</h3>
+<pre id="compact"></pre>
+
+<h3>Tiles (left → right)</h3>
+<pre id="tiles"></pre>
+
+<script>
+const TILE_RE = /^([0-9][mps]|[1-7]z)$/;
+
+document.getElementById("file").addEventListener("change", e => {
+  const img = document.getElementById("preview");
+  img.src = URL.createObjectURL(e.target.files[0]);
+});
+
+document.getElementById("run").addEventListener("click", async () => {
+  try {
+    setStatus("warn", "Reading photo…");
+
+    const apiKey = document.getElementById("apiKey").value.trim();
+    if (!apiKey) throw new Error("API key missing");
+
+    const file = document.getElementById("file").files[0];
+    if (!file) throw new Error("No image selected");
+
+    const imageData = await toDataURL(file);
+    const result = await readTiles(apiKey, imageData);
+
+    const tiles = result.tiles_lr;
+    validateTiles(tiles);
+
+    const compact = toCompact(tiles);
+
+    document.getElementById("tiles").textContent =
+      JSON.stringify(tiles, null, 2);
+    document.getElementById("compact").textContent = compact;
+
+    setStatus("ok", "Done");
+
+  } catch (err) {
+    setStatus("err", err.message);
+  }
+});
+
+function setStatus(type, msg) {
+  const el = document.getElementById("status");
+  el.className = type;
+  el.textContent = msg;
+}
+
+function toDataURL(file) {
+  return new Promise(res => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.readAsDataURL(file);
+  });
+}
+
+async function readTiles(apiKey, imageData) {
+  const prompt = `
+Return ONLY valid JSON:
+{
+  "tiles_lr": ["1m","9m","1p","1z"]
+}
+
+Tile rules:
+- Suits: 1-9m, 1-9p, 1-9s
+- Aka 5: 0m, 0p, 0s
+- Honors: 1z east, 2z south, 3z west, 4z north, 5z white, 6z green, 7z red
+- Tiles listed LEFT TO RIGHT as seen in the photo
+`;
+
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + apiKey,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: "gpt-4.1-mini",
+      input: [{
+        role: "user",
+        content: [
+          { type: "input_text", text: prompt },
+          { type: "input_image", image_url: imageData }
+        ]
+      }]
+    })
+  });
+
+  if (!response.ok)
+    throw new Error("API request failed");
+
+  const data = await response.json();
+  const text = data.output_text;
+  return JSON.parse(text);
+}
+
+function validateTiles(tiles) {
+  if (!Array.isArray(tiles))
+    throw new Error("No tiles returned");
+
+  if (![13,14].includes(tiles.length))
+    throw new Error("Unexpected tile count: " + tiles.length);
+
+  const counts = {};
+
+  for (const t of tiles) {
+    if (!TILE_RE.test(t))
+      throw new Error("Invalid tile: " + t);
+
+    const key = t[0] === "0" ? "5" + t[1] : t;
+    counts[key] = (counts[key] || 0) + 1;
+    if (counts[key] > 4)
+      throw new Error("Too many of tile: " + key);
+  }
+}
+
+function toCompact(tiles) {
+  const g = { m:[], p:[], s:[], z:[] };
+
+  for (const t of tiles) {
+    if (t.endsWith("z")) {
+      g.z.push(t[0]);
+    } else {
+      g[t[1]].push(t[0]);
+    }
+  }
+
+  const sort = a => a.sort((x,y)=>x-y).join("");
+
+  let out = "";
+  if (g.m.length) out += sort(g.m) + "m";
+  if (g.p.length) out += sort(g.p) + "p";
+  if (g.s.length) out += sort(g.s) + "s";
+  if (g.z.length) out += sort(g.z) + "z";
+  return out;
+}
+</script>
+
+</body>
+</html>
